@@ -5,25 +5,31 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.1')
-  .option('-t, --type <type>', 'queue type')
-  .option('-q, --queue <queue>', 'pool queue (bull/sidekiq)')
+  .version('0.0.2')
+  .option('-t, --type <type>', 'queue type (sidekiq/bull)')
+  .option('-l, --list <list>', 'source redis list')
   .option('-r, --redis <redis>', 'redis url')
+  .option('--debug', 'debug')
+
   .parse(process.argv)
 
-if (!program.type || !program.queue || !program.redis) {
+if (!program.type || !program.list || !program.redis) {
   program.help()
   process.exit()
 }
 
-var redis = Redis.createClient(program.redis)
+console.log('caron(' + program.redis + '/' + program.list + '/' + program.type + ')')
+
+var redis = Redis.createClient(program.redis, {
+  dropBufferSupport: true
+})
 
 var scripts = {
   prefix: [
     'local cnt = 0',
     'local err = 0',
-    'while (redis.call("LLEN", "' + program.queue + '") ~= 0) do',
-    '  local msg = redis.call("RPOP", "' + program.queue + '")',
+    'while (redis.call("LLEN", "' + program.list + '") ~= 0) do',
+    '  local msg = redis.call("RPOP", "' + program.list + '")',
     '  if not msg then break end',
     '  local cmsg = cjson.decode(msg)',
     '  if not cmsg or type(cmsg) ~= "table" then',
@@ -78,12 +84,17 @@ redis.defineCommand('qwork', {
   numberOfKeys: 0
 })
 
-var elapsed_time = function(start) {
+var elapsed_time = (start) => {
   return process.hrtime(start)
 }
 
 var work = () => {
   var args = []
+  var ts_start = null
+  
+  if (program.debug) {
+    ts_start = process.hrtime()
+  }
   
   switch (ptype) {
     case 'bull':
@@ -94,14 +105,17 @@ var work = () => {
       break
   }
   
-  var start = process.hrtime()
-
   args.push(
     (err, res) => {
       if (err) {
         console.error(err)
         process.exit()
         return
+      }
+
+      if (program.debug) {
+        let elapsed = elapsed_time(ts_start)
+        console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
       }
 
       setTimeout(() => {
