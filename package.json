@@ -1,0 +1,53 @@
+{
+  "name": "caron",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Atomic job enqueuer",
+  "author": {
+    "name": "prdn",
+    "email": "paolo@bitfinex.com"
+  },
+  "keywords": [
+    "bitfinex"
+  ],
+  "dependencies": {
+    "async": "~2.0.0-rc.6",
+    "commander": "~2.9.0",
+    "hiredis": "~0.5.0",
+    "ioredis": "~2.1.0",
+    "lodash": "~4.13.1"
+  },
+  "engine": {
+    "node": ">=6.0"
+  },
+  "main": "index.js",
+  "bin": {
+    "grape": "bin/caron.js"
+  },
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "devDependencies": {
+    "chai": "~3.2.0",
+    "mocha": "~2.2.5"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitfinexcom/caron.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bitfinexcom/caron/issues"
+  },
+  "homepage": "https://github.com/bitfinexcom/caron",
+  "maintainers": [
+    {
+      "name": "prdn",
+      "email": "paolo@bitfinex.com"
+    }
+  ]
+}
