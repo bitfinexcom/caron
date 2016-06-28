@@ -5,14 +5,17 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.3')
-  .option('-t, --type <type>', 'queue type [sidekiq | bull]')
-  .option('-l, --list <list>', 'source redis list (i.e: global_jobs)')
-  .option('-r, --redis <redis>', 'redis url (i.e: redis://127.0.0.1:6379)')
-  .option('-f, --freq <ms>', 'poll frequency (in milliseconds) - default: 10', parseInt, 10)
+  .version('0.0.5')
+  .option('-t, --type <val>', 'queue type [sidekiq | bull]')
+  .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
+  .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
+  .option('-f, --freq <n>', 'poll frequency (in milliseconds) - default: 10', parseInt)
+  .option('-b, --batch <n>', 'max number of jobs created per batch - default: 1000', parseInt)
   .option('--debug', 'debug')
-
   .parse(process.argv)
+
+if (!program.freq) program.freq = 10
+if (!program.batch) program.batch = 1000
 
 if (!program.type || !program.list || !program.redis) {
   program.help()
@@ -29,7 +32,7 @@ var scripts = {
   prefix: [
     'local cnt = 0',
     'local err = 0',
-    'while (redis.call("LLEN", "' + program.list + '") ~= 0) do',
+    'while ((redis.call("LLEN", "' + program.list + '") ~= 0) and (cnt < ' + program.batch + ')) do',
     '  local msg = redis.call("RPOP", "' + program.list + '")',
     '  if not msg then break end',
     '  local cmsg = cjson.decode(msg)',
