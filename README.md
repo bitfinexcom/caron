@@ -1,15 +1,15 @@
 # caron
 
-Atomic Job enqueuer for common job queues (Sidekiq, Bull, ...)
+Atomic Job enqueuer for common Job Queues (Sidekiq, Bull, ...)
 
 **Caron** pops messages from a redis list and atomically creates a Job for the specified Job Queue.
 
-Sidekiq(Ruby) and Bull(Node.js) are supported.
+Uses `lua` scripting internally to provide atomicity (http://redis.io/commands/EVAL)
 
 ### Support
 
-* Bull-1.0.0
-* Sidekiq-4.1.2
+* [Bull-1.0.0](https://github.com/OptimalBits/bull)
+* [Sidekiq-4.1.2](https://github.com/mperham/sidekiq)
 
 ### Install
 ```
