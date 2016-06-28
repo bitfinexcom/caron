@@ -5,10 +5,11 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.2')
-  .option('-t, --type <type>', 'queue type (sidekiq/bull)')
-  .option('-l, --list <list>', 'source redis list')
-  .option('-r, --redis <redis>', 'redis url')
+  .version('0.0.3')
+  .option('-t, --type <type>', 'queue type [sidekiq | bull]')
+  .option('-l, --list <list>', 'source redis list (i.e: global_jobs)')
+  .option('-r, --redis <redis>', 'redis url (i.e: redis://127.0.0.1:6379)')
+  .option('-f, --freq <ms>', 'poll frequency (in milliseconds) - default: 10', parseInt, 10)
   .option('--debug', 'debug')
 
   .parse(process.argv)
@@ -120,7 +121,7 @@ var work = () => {
 
       setTimeout(() => {
         work()
-      }, 100)
+      }, program.freq)
     }
   )
 
