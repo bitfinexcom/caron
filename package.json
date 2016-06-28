@@ -22,7 +22,7 @@
   },
   "main": "index.js",
   "bin": {
-    "grape": "bin/caron.js"
+    "caron": "bin/caron.js"
   },
   "directories": {
     "example": "examples",
