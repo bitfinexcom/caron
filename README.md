@@ -18,7 +18,20 @@ npm install -g caron
 
 ### Usage
 ```
-caron --help 
+$ caron --help
+
+Usage: caron [options]
+
+Options:
+
+  -h, --help         output usage information
+  -V, --version      output the version number
+  -t, --type <val>   queue type [sidekiq | bull]
+  -l, --list <val>   source redis list (i.e: global_jobs)
+  -r, --redis <val>  redis url (i.e: redis://127.0.0.1:6379)
+  -f, --freq <n>     poll frequency (in milliseconds) - default: 10
+  -b, --batch <n>    max number of jobs created per batch - default: 1000
+  --debug            debug
 ```
 
 ```
