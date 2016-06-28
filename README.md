@@ -1,8 +1,8 @@
 # caron
 
-Atomic job enqueuer for Bull and Sidekiq
+Atomic job enqueuer for common job queues (Sidekiq, Bull, ...)
 
-*caron* reads from a redis list and atomically creates a job for Bull or Sidekiq
+**Caron** reads from a redis list and atomically creates a job for Sidekiq(Ruby) and Bull(Node.js)
 
 ### Install
 ```
