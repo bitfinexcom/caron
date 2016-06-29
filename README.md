@@ -1,6 +1,6 @@
 # caron
 
-Atomic Job enqueuer for common Job Queues (Sidekiq, Bull, ...)
+Atomic Job enqueuer for common Job Queues (Sidekiq, Resque, Bull, ...)
 
 **Caron** pops messages from a redis list and atomically creates a Job for the specified Job Queue.
 
@@ -9,6 +9,7 @@ Uses `lua` scripting internally to provide atomicity (http://redis.io/commands/E
 ### Support
 
 * [Sidekiq-4.1.2](https://github.com/mperham/sidekiq)
+* [Resque-1.2.6](https://github.com/resque/resque)
 * [Bull-1.0.0](https://github.com/OptimalBits/bull)
 
 ### Install
@@ -47,7 +48,7 @@ caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq
 
 ##### Push from redis-cli
 ```
-// Sidekiq job enqueue
+// Sidekiq/Resque job enqueue
 redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\",\"other\":{\"f\":5}}"
 
 // Bull job enqueue
@@ -65,6 +66,7 @@ var redis = new Redis()
 
 setInterval(() => {
   redis.lpush('sidekiq_test', JSON.stringify({ foo: 'bar', '$queue': 'critical', '$class': 'MyCriticalJob', other: { a: 1, b: 2 } }))
+  redis.lpush('resque_test', JSON.stringify({ foo: 'bar', '$queue': 'critical', '$class': 'MyCriticalJob', other: { a: 1, b: 2 } }))
   redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'priority', '$attempts': 5, other: { a: 1, b: 2 } }))
   redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'lazy', '$attempts': 1, '$delay': 5000, other: { a: 1, b: 2 } }))
 }, 1)
