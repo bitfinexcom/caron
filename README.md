@@ -25,19 +25,20 @@ $ caron --help
 
   Options:
 
-    -h, --help               output usage information
-    -V, --version            output the version number
-    -t, --type <val>         queue type [sidekiq | bull]
-    -l, --list <val>         source redis list (i.e: global_jobs)
-    -r, --redis <val>        redis url (i.e: redis://127.0.0.1:6379)
-    -f, --freq <n>           poll frequency (in milliseconds) - default: 10
-    -b, --batch <n>          max number of jobs created per batch - default: 1000
-    --def_queue <val>        default dest queue - default: default
-    --def_sk_worker <val>    default Job Queue worker - default: BaseJob
-    --def_bl_attempts <val>  default Bull Job attempts - default: 1
-    --def_bl_lifo            Bull LIFO mode
-    --debug                  debug    
-    
+    -h, --help            output usage information
+    -V, --version         output the version number
+    -t, --type <val>      queue type [sidekiq | bull | resque]
+    -l, --list <val>      source redis list (i.e: global_jobs)
+    -r, --redis <val>     redis url (i.e: redis://127.0.0.1:6379)
+    -f, --freq <n>        poll frequency (in milliseconds) - default: 10
+    -b, --batch <n>       max number of jobs created per batch - default: 1000
+    --q_prefix <val>      redis queue prefix (i.e: "resque" or "bull")
+    --def_queue <val>     default dest queue - default: default
+    --def_worker <val>    default Job Queue worker - default: BaseJob
+    --def_attempts <val>  default Bull Job attempts - default: 1
+    --q_lifo              Bull LIFO mode
+    --debug               debug
+
 ```
 
 ```

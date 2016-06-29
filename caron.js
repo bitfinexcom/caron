@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.8')
+  .version('0.0.9')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
