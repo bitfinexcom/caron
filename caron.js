@@ -60,11 +60,11 @@ var scripts = {
       'local jdelay = cmsg["$delay"]',
       'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = 1 end',
       'if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end',
-      'redis.call("HMSET", "bull:" .. cmsg["$queue"] .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", 0, "timestamp", ARGV[1], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
+      'redis.call("HMSET", "bull:" .. cmsg["$queue"] .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", jdelay, "timestamp", ARGV[1], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
       'if jdelay > 0 then',
       '  local timestamp = (tonumber(ARGV[1]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)',
-      '  redis.call("ZADD", KEYS[6], timestamp, jobId)',
-      '  redis.call("PUBLISH", KEYS[6], (timestamp / 0x1000))',
+      '  redis.call("ZADD", "bull:" .. cmsg["$queue"] .. ":delayed", timestamp, jobId)',
+      '  redis.call("PUBLISH", "bull:" .. cmsg["$queue"] .. ":delayed", (timestamp / 0x1000))',
       'else',
       '  if redis.call("EXISTS", "bull:" .. cmsg["$queue"] .. ":meta-paused") ~= 1 then',
       '    redis.call("LPUSH", "bull:" .. cmsg["$queue"] .. ":wait", jobId)',
@@ -118,7 +118,7 @@ var work = () => {
   
   switch (ptype) {
     case 'bull':
-      args.push(Math.floor((new Date()).getTime() * 1000))
+      args.push(Date.now())
       break
     case 'sidekiq':
       args.push(crypto.randomBytes(12).toString('hex'))
