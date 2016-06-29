@@ -34,7 +34,9 @@ $ caron --help
     --def_queue <val>        default dest queue - default: default
     --def_sk_worker <val>    default Job Queue worker - default: BaseJob
     --def_bl_attempts <val>  default Bull Job attempts - default: 1
-    --debug                  debug
+    --def_bl_lifo            Bull LIFO mode
+    --debug                  debug    
+    
 ```
 
 ```

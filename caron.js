@@ -14,6 +14,7 @@ program
   .option('--def_queue <val>', 'default dest queue - default: default')
   .option('--def_sk_worker <val>', 'default Job Queue worker - default: BaseJob')
   .option('--def_bl_attempts <val>', 'default Bull Job attempts - default: 1', parseInt)
+  .option('--def_bl_lifo', 'Bull LIFO mode')
   .option('--debug', 'debug')
   .parse(process.argv)
 
@@ -54,6 +55,7 @@ var scripts = {
   ].join("\n"),
   bull: {
     lua: [
+      'local pushCmd = "' + (program.def_bl_lifo ? 'R' : 'L') + 'PUSH"',
       'if not cmsg["$queue"] then cmsg["$queue"] = "' + program.def_queue + '" end',
       'local jobId = redis.call("INCR", "bull:" .. cmsg["$queue"] .. ":id")',
       'local jattempts = cmsg["$attempts"]',
@@ -67,12 +69,12 @@ var scripts = {
       '  redis.call("PUBLISH", "bull:" .. cmsg["$queue"] .. ":delayed", (timestamp / 0x1000))',
       'else',
       '  if redis.call("EXISTS", "bull:" .. cmsg["$queue"] .. ":meta-paused") ~= 1 then',
-      '    redis.call("LPUSH", "bull:" .. cmsg["$queue"] .. ":wait", jobId)',
+      '    redis.call(pushCmd, "bull:" .. cmsg["$queue"] .. ":wait", jobId)',
       '  else',
-      '    redis.call("LPUSH", "bull:" .. cmsg["$queue"] .. ":paused", jobId)',
+      '    redis.call(pushCmd, "bull:" .. cmsg["$queue"] .. ":paused", jobId)',
       '  end',
+      '  redis.call("PUBLISH", "bull:" .. cmsg["$queue"] .. ":jobs", jobId)',
       'end',
-      'redis.call("PUBLISH", "bull:" .. cmsg["$queue"] .. ":jobs", jobId)'
     ].join("\n")
   },
   sidekiq: {
