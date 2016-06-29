@@ -1,8 +1,8 @@
 {
   "name": "caron",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": false,
-  "description": "Atomic job enqueuer for common job queues (Sidekiq, Bull, ...)",
+  "description": "Atomic job enqueuer for common job queues (Sidekiq, Resque, Bull, ...)",
   "author": {
     "name": "prdn",
     "email": "paolo@bitfinex.com"
