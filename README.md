@@ -41,15 +41,32 @@ $ caron --help
 caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq 25
 ```
 
-
 ### Examples
 
+##### redis-cli
 ```
 // Sidekiq job enqueue
-redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\"}"
+redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\",\"other\":{\"f\":5}}"
 ```
 
 ```
 // Bull job enqueue
-redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"foo\":\"bar\",\"my\":\"stuff\"}"
+redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"foo\":\"bar\",\"my\":\"stuff\",\"other\":{\"f\":5}}"
+```
+
+##### Node.js
+
+```
+// Node.JS example
+'use strict'
+
+const Redis = require('ioredis')
+
+var redis = new Redis()
+
+setInterval(() => {
+  redis.lpush('sidekiq_test', JSON.stringify({ foo: 'bar', '$queue': 'critical', '$class': 'MyCriticalJob', other: { a: 1, b: 2 } }))
+  redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'priority', '$attempts': 5, other: { a: 1, b: 2 } }))
+  redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'lazy', '$attempts': 1, '$delay': 5000, other: { a: 1, b: 2 } }))
+}, 1)
 ```
