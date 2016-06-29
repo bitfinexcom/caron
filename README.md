@@ -8,8 +8,8 @@ Uses `lua` scripting internally to provide atomicity (http://redis.io/commands/E
 
 ### Support
 
-* [Bull-1.0.0](https://github.com/OptimalBits/bull)
 * [Sidekiq-4.1.2](https://github.com/mperham/sidekiq)
+* [Bull-1.0.0](https://github.com/OptimalBits/bull)
 
 ### Install
 ```
@@ -20,18 +20,21 @@ npm install -g caron
 ```
 $ caron --help
 
-Usage: caron [options]
+  Usage: caron [options]
 
-Options:
+  Options:
 
-  -h, --help         output usage information
-  -V, --version      output the version number
-  -t, --type <val>   queue type [sidekiq | bull]
-  -l, --list <val>   source redis list (i.e: global_jobs)
-  -r, --redis <val>  redis url (i.e: redis://127.0.0.1:6379)
-  -f, --freq <n>     poll frequency (in milliseconds) - default: 10
-  -b, --batch <n>    max number of jobs created per batch - default: 1000
-  --debug            debug
+    -h, --help               output usage information
+    -V, --version            output the version number
+    -t, --type <val>         queue type [sidekiq | bull]
+    -l, --list <val>         source redis list (i.e: global_jobs)
+    -r, --redis <val>        redis url (i.e: redis://127.0.0.1:6379)
+    -f, --freq <n>           poll frequency (in milliseconds) - default: 10
+    -b, --batch <n>          max number of jobs created per batch - default: 1000
+    --def_queue <val>        default dest queue - default: default
+    --def_sk_worker <val>    default Job Queue worker - default: BaseJob
+    --def_bl_attempts <val>  default Bull Job attempts - default: 1
+    --debug                  debug
 ```
 
 ```
