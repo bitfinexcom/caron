@@ -2,7 +2,7 @@
   "name": "caron",
   "version": "0.0.9",
   "private": false,
-  "description": "Atomic job enqueuer for common job queues (Sidekiq, Resque, Bull, ...)",
+  "description": "Atomic job enqueuer from Redis lists to common job queues (Sidekiq, Resque, Bull, ...)",
   "author": {
     "name": "prdn",
     "email": "paolo@bitfinex.com"
