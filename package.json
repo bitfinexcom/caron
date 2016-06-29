@@ -1,6 +1,6 @@
 {
   "name": "caron",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": false,
   "description": "Atomic job enqueuer for common job queues (Sidekiq, Bull, ...)",
   "author": {

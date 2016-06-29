@@ -5,17 +5,23 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.5')
+  .version('0.0.6')
   .option('-t, --type <val>', 'queue type [sidekiq | bull]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
   .option('-f, --freq <n>', 'poll frequency (in milliseconds) - default: 10', parseInt)
   .option('-b, --batch <n>', 'max number of jobs created per batch - default: 1000', parseInt)
+  .option('--def_queue <val>', 'default dest queue - default: default')
+  .option('--def_sk_worker <val>', 'default Job Queue worker - default: BaseJob')
+  .option('--def_bl_attempts <val>', 'default Bull Job attempts - default: 1', parseInt)
   .option('--debug', 'debug')
   .parse(process.argv)
 
 if (!program.freq) program.freq = 10
 if (!program.batch) program.batch = 1000
+if (!program.def_queue) program.def_queue = 'default'
+if (!program.def_sk_worker) program.def_sk_worker = 'BaseJob'
+if (!program.def_bl_attempts) program.def_bl_attempts = 1
 
 if (!program.type || !program.list || !program.redis) {
   program.help()
@@ -48,28 +54,28 @@ var scripts = {
   ].join("\n"),
   bull: {
     lua: [
-      'if not cmsg["queue"] then cmsg["queue"] = "default" end',
+      'if not cmsg["queue"] then cmsg["queue"] = "' + program.def_queue + '" end',
       'local jobId = redis.call("INCR", "bull:" .. cmsg["queue"] .. ":id")',
-      'redis.call("HMSET", "bull:" .. cmsg["queue"] .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", 0, "timestamp", ARGV[1], "attempts", 1, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
+      'redis.call("HMSET", "bull:" .. cmsg["queue"] .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", 0, "timestamp", ARGV[1], "attempts", ' + program.def_bl_attempts + ', "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
       'if redis.call("EXISTS", "bull:" .. cmsg["queue"] .. ":meta-paused") ~= 1 then',
       '  redis.call("LPUSH", "bull:" .. cmsg["queue"] .. ":wait", jobId)',
       'else',
       '  redis.call("LPUSH", "bull:" .. cmsg["queue"] .. ":paused", jobId)',
       'end',
-      'redis.call("PUBLISH", "bull:" .. cmsg["queue"] .. ":jobs", jobId)',
+      'redis.call("PUBLISH", "bull:" .. cmsg["queue"] .. ":jobs", jobId)'
     ].join("\n")
   },
   sidekiq: {
     lua: [
       'if not cmsg["queue"] then',
-      '  cmsg["queue"] = "default"',
+      '  cmsg["queue"] = "' + program.def_queue + '"',
       'end',
       'if not cmsg["class"] then',
-      '  cmsg["class"] = "BaseJob"',
+      '  cmsg["class"] = "' + program.def_sk_worker + '"',
       'end',
       'local payload = { queue = cmsg["queue"], jid = ARGV[1], class = cmsg["class"], args = { cmsg } }',
       'redis.call("LPUSH", "queue:" .. cmsg["queue"], cjson.encode(payload))',
-      'redis.call("SADD", "queues", cmsg["queue"])',
+      'redis.call("SADD", "queues", cmsg["queue"])'
     ].join("\n")
   }
 }
