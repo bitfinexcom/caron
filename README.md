@@ -45,21 +45,18 @@ caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq
 
 ### Examples
 
-##### redis-cli
+##### Push from redis-cli
 ```
 // Sidekiq job enqueue
 redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\",\"other\":{\"f\":5}}"
-```
 
-```
 // Bull job enqueue
 redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"foo\":\"bar\",\"my\":\"stuff\",\"other\":{\"f\":5}}"
 ```
 
-##### Node.js
+##### Push from Node.js
 
 ```
-// Node.JS example
 'use strict'
 
 const Redis = require('ioredis')
@@ -71,4 +68,17 @@ setInterval(() => {
   redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'priority', '$attempts': 5, other: { a: 1, b: 2 } }))
   redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'lazy', '$attempts': 1, '$delay': 5000, other: { a: 1, b: 2 } }))
 }, 1)
+```
+
+##### Push from Ruby
+
+```
+require 'redis'
+require 'json'
+
+rcli = Redis.new
+
+rcli.lpush('sidekiq_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'critical', '$class' => 'MyCriticalJob', 'other' => { 'a' => 1, 'b' => 2 } }))
+rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'priority', '$attempts' => 5, 'other' => { 'a' => 1, 'b' => 2 } }))
+rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 ```
