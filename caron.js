@@ -54,28 +54,30 @@ var scripts = {
   ].join("\n"),
   bull: {
     lua: [
-      'if not cmsg["queue"] then cmsg["queue"] = "' + program.def_queue + '" end',
-      'local jobId = redis.call("INCR", "bull:" .. cmsg["queue"] .. ":id")',
-      'redis.call("HMSET", "bull:" .. cmsg["queue"] .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", 0, "timestamp", ARGV[1], "attempts", ' + program.def_bl_attempts + ', "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
-      'if redis.call("EXISTS", "bull:" .. cmsg["queue"] .. ":meta-paused") ~= 1 then',
-      '  redis.call("LPUSH", "bull:" .. cmsg["queue"] .. ":wait", jobId)',
+      'if not cmsg["$queue"] then cmsg["$queue"] = "' + program.def_queue + '" end',
+      'local jobId = redis.call("INCR", "bull:" .. cmsg["$queue"] .. ":id")',
+      'local jattempts = cmsg["$attempts"]',
+      'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = 1 end',
+      'redis.call("HMSET", "bull:" .. cmsg["$queue"] .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", 0, "timestamp", ARGV[1], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
+      'if redis.call("EXISTS", "bull:" .. cmsg["$queue"] .. ":meta-paused") ~= 1 then',
+      '  redis.call("LPUSH", "bull:" .. cmsg["$queue"] .. ":wait", jobId)',
       'else',
-      '  redis.call("LPUSH", "bull:" .. cmsg["queue"] .. ":paused", jobId)',
+      '  redis.call("LPUSH", "bull:" .. cmsg["$queue"] .. ":paused", jobId)',
       'end',
-      'redis.call("PUBLISH", "bull:" .. cmsg["queue"] .. ":jobs", jobId)'
+      'redis.call("PUBLISH", "bull:" .. cmsg["$queue"] .. ":jobs", jobId)'
     ].join("\n")
   },
   sidekiq: {
     lua: [
-      'if not cmsg["queue"] then',
-      '  cmsg["queue"] = "' + program.def_queue + '"',
+      'if not cmsg["$queue"] then',
+      '  cmsg["$queue"] = "' + program.def_queue + '"',
       'end',
-      'if not cmsg["class"] then',
-      '  cmsg["class"] = "' + program.def_sk_worker + '"',
+      'if not cmsg["$class"] then',
+      '  cmsg["$class"] = "' + program.def_sk_worker + '"',
       'end',
-      'local payload = { queue = cmsg["queue"], jid = ARGV[1], class = cmsg["class"], args = { cmsg } }',
-      'redis.call("LPUSH", "queue:" .. cmsg["queue"], cjson.encode(payload))',
-      'redis.call("SADD", "queues", cmsg["queue"])'
+      'local payload = { queue = cmsg["$queue"], jid = ARGV[1], class = cmsg["$class"], args = { cmsg } }',
+      'redis.call("LPUSH", "queue:" .. cmsg["$queue"], cjson.encode(payload))',
+      'redis.call("SADD", "queues", cmsg["$queue"])'
     ].join("\n")
   }
 }

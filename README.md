@@ -30,10 +30,10 @@ caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq
 
 ```
 // Sidekiq job enqueue
-redis-cli > lpush "sidekiq_jobs" "{\"queue\":\"critical\",\"class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\"}"
+redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\"}"
 ```
 
 ```
 // Bull job enqueue
-redis-cli > lpush "bull_jobs" "{\"queue\":\"critical\",\"foo\":\"bar\",\"my\":\"stuff\"}"
+redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"foo\":\"bar\",\"my\":\"stuff\"}"
 ```
