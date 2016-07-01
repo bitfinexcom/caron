@@ -1,6 +1,6 @@
 # caron
 
-Atomic Job enqueuer from Redis lists to common Job Queues (Sidekiq, Resque, Bull, ...)
+Atomic Job enqueuer from Redis lists to popular Job Queues (Sidekiq, Resque, Bull, ...)
 
 **Caron** pops messages from a redis list and atomically creates a Job for the specified Job Queue.
 
