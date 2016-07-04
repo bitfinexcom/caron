@@ -1,6 +1,6 @@
 {
   "name": "caron",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": false,
   "description": "Atomic job enqueuer for common job queues (Sidekiq, Resque, Bull, ...)",
   "author": {
@@ -14,7 +14,7 @@
     "async": "~2.0.0-rc.6",
     "commander": "~2.9.0",
     "hiredis": "~0.5.0",
-    "ioredis": "~2.1.0",
+    "ioredis": "~2.2.0",
     "lodash": "~4.13.1"
   },
   "engine": {

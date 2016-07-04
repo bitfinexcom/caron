@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.9')
+  .version('0.0.10')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
@@ -19,6 +19,7 @@ program
   .option('--debug', 'debug')
   .parse(process.argv)
 
+if (!program.redis) program.redis = 'redis://127.0.0.1:6379'
 if (!program.freq) program.freq = 10
 if (!program.batch) program.batch = 1000
 if (!program.def_queue) program.def_queue = 'default'
@@ -27,10 +28,18 @@ if (!program.def_attempts) program.def_attempts = 1
 if (!program.q_prefix) program.q_prefix = ''
 
 var showHelp = false
-
 var ptype = program.type
+var debug = program.debug
 
-if (!ptype || !program.list || !program.redis) {
+var perrors = []
+
+if (!ptype) {
+  perrors.push('-t (--type) required')
+  showHelp = true
+}
+
+if (!program.list) {
+  perrors.push('-l (--list) required')
   showHelp = true
 }
 
@@ -39,6 +48,12 @@ if (['sidekiq', 'bull', 'resque'].indexOf(ptype) === -1) {
 }
 
 if (showHelp) {
+  if (perrors.length) {
+    console.error('\n  ' + program.name() + ' ERRORS!')
+    perrors.forEach(e => {
+      console.error('    ' + e)
+    })
+  }
   program.help()
   process.exit()
 }
@@ -51,8 +66,25 @@ switch (ptype) {
 
 console.log('caron(' + program.redis + '/' + program.list + '/' + program.type + ')')
 
+if (debug) console.log('started')
+
+var STATUS = {
+  active: 1,
+  processing: 0
+}
+
+Redis.Promise.onPossiblyUnhandledRejection(e => {
+  STATUS.processing = 0
+  console.log(e)
+})
+
 var redis = Redis.createClient(program.redis, {
   dropBufferSupport: true
+})
+
+redis.on('error', e => {
+  STATUS.processing = 0
+  console.log(e)
 })
 
 var scripts = {
@@ -135,10 +167,12 @@ var elapsed_time = (start) => {
 }
 
 var work = () => {
+  if (!STATUS.active || STATUS.processing) return
+
   var args = []
   var ts_start = null
   
-  if (program.debug) {
+  if (debug) {
     ts_start = process.hrtime()
   }
   
@@ -153,13 +187,15 @@ var work = () => {
   
   args.push(
     (err, res) => {
+      STATUS.processing = 0
+
       if (err) {
         console.error(err)
         process.exit()
         return
       }
 
-      if (program.debug) {
+      if (debug) {
         let elapsed = elapsed_time(ts_start)
         console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
       }
@@ -170,9 +206,28 @@ var work = () => {
     }
   )
 
+  STATUS.processing = 1
+
   redis.qwork.apply(
     redis, args
   )
 }
 
 work()
+
+var stop = () => {
+  STATUS.active = 0
+  
+  if (debug) console.log('stopping...')
+  
+  setInterval(() => {
+    if (!STATUS.processing) {
+      if (debug) console.log('stopped')
+      process.exit()
+    }
+  }, 100)
+}
+
+process.on('SIGINT', () => {
+  stop()
+})
