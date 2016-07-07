@@ -89,6 +89,13 @@ redis.on('error', e => {
 
 var scripts = {
   prefix: [
+    'local get_random_string = function get_random_string(length)',
+    '  local str = ""',
+    '  for i = 1, length do',
+    '    str = str..string.char(math.random(32, 126))',
+    '  end',
+    '  return str',
+    'end',
     'local cnt = 0',
     'local err = 0',
     'while ((redis.call("LLEN", "' + program.list + '") ~= 0) and (cnt < ' + program.batch + ')) do',
@@ -109,8 +116,10 @@ var scripts = {
     'return {err, cnt}'
   ].join("\n"),
   ruby_common_1: [
+    'local jretry = cmsg["$retry"]',
+    'if not jretry then jretry = false end',
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
-    'local payload = { queue = jqueue, jid = ARGV[1], class = cmsg["$class"] }',
+    'local payload = { queue = jqueue, jid = ARGV[1], class = cmsg["$class"], retry = jretry }',
     'cmsg["$class"] = nil',
     'payload["args"] = cmsg["$args"]',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
@@ -179,9 +188,6 @@ var work = () => {
   switch (ptype) {
     case 'bull':
       args.push(Date.now())
-      break
-    case 'sidekiq':
-      args.push(crypto.randomBytes(12).toString('hex'))
       break
   }
   
