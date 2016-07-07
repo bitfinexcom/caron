@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.12')
+  .version('0.0.13')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
@@ -127,7 +127,10 @@ var scripts = {
     'if not jretry then jretry = false end',
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
     'local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }',
-    'if ARGV[1] == "sidekiq" then payload["jid"] = get_random_string(24) end',
+    'if ARGV[1] == "sidekiq" then',
+    '  if not cmsg["$jid"] then cmsg["$jid"] = get_random_string(24) end',
+    '  payload["jid"] = cmsg["$jid"]',
+    'end',
     'cmsg["$class"] = nil',
     'payload["args"] = cmsg["$args"]',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
