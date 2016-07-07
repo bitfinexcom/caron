@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.11')
+  .version('0.0.12')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
@@ -94,11 +94,9 @@ var scripts = {
     'local function get_random_string(length)',
     '  local str = ""',
     '  for i = 1, length do',
-    '    local rid = math.random(1, 3)',
-    '    if rid == 1 then',
+    '    local rid = math.random()',
+    '    if rid < 0.3333 then',
     '      str = str..string.char(math.random(48, 57))',
-    '    elseif rid == 2 then',
-    '      str = str..string.char(math.random(65, 90))',
     '    else',
     '      str = str..string.char(math.random(97, 122))',
     '    end',
