@@ -89,10 +89,20 @@ redis.on('error', e => {
 
 var scripts = {
   prefix: [
-    'local get_random_string = function get_random_string(length)',
+    'math.randomseed(tonumber(ARGV[2]))',
+    'local function get_random_string(length)',
     '  local str = ""',
     '  for i = 1, length do',
-    '    str = str..string.char(math.random(32, 126))',
+    '    local rid = math.random(1, 3)',
+    '    if rid == 1 then',
+    '      str = str..string.char(math.random(48, 57))',
+    '    else',
+    '      if rid == 2 then',
+    '        str = str..string.char(math.random(65, 90))',
+    '      else',
+    '        str = str..string.char(math.random(97, 122))',
+    '      end',
+    '    end',
     '  end',
     '  return str',
     'end',
@@ -119,7 +129,7 @@ var scripts = {
     'local jretry = cmsg["$retry"]',
     'if not jretry then jretry = false end',
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
-    'local payload = { queue = jqueue, jid = ARGV[1], class = cmsg["$class"], retry = jretry }',
+    'local payload = { queue = jqueue, jid = get_random_string(24), class = cmsg["$class"], retry = jretry }',
     'cmsg["$class"] = nil',
     'payload["args"] = cmsg["$args"]',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
@@ -185,11 +195,10 @@ var work = () => {
     ts_start = process.hrtime()
   }
   
-  switch (ptype) {
-    case 'bull':
-      args.push(Date.now())
-      break
-  }
+  args.push(
+    Date.now(), //timestamp
+    Date.now()  //random seed
+  )
   
   args.push(
     (err, res) => {
