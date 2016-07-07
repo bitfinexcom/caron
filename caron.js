@@ -20,7 +20,7 @@ program
   .parse(process.argv)
 
 if (!program.redis) program.redis = 'redis://127.0.0.1:6379'
-if (!program.freq) program.freq = 10
+if (!program.freq || program.freq < 1) program.freq = 10
 if (!program.batch) program.batch = 1000
 if (!program.def_queue) program.def_queue = 'default'
 if (!program.def_worker) program.def_worker = 'BaseJob'
@@ -70,7 +70,8 @@ if (debug) console.log('started')
 
 var STATUS = {
   active: 1,
-  processing: 0
+  processing: 0,
+  rseed: Date.now()
 }
 
 Redis.Promise.onPossiblyUnhandledRejection(e => {
@@ -187,6 +188,12 @@ var elapsed_time = (start) => {
 var work = () => {
   if (!STATUS.active || STATUS.processing) return
 
+  var rseed = Date.now()
+  
+  if (rseed < STATUS.rseed) {
+    setTimeout(work, 5)
+  }
+
   var args = []
   var ts_start = null
   
@@ -197,7 +204,7 @@ var work = () => {
   args.push(
     ptype,
     Date.now(), //timestamp
-    Date.now()  //random seed
+    rseed
   )
   
   args.push(
@@ -215,9 +222,7 @@ var work = () => {
         console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
       }
 
-      setTimeout(() => {
-        work()
-      }, program.freq)
+      setTimeout(work, program.freq)
     }
   )
 
