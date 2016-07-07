@@ -89,7 +89,7 @@ redis.on('error', e => {
 
 var scripts = {
   prefix: [
-    'math.randomseed(tonumber(ARGV[2]))',
+    'math.randomseed(tonumber(ARGV[3]))',
     'local function get_random_string(length)',
     '  local str = ""',
     '  for i = 1, length do',
@@ -127,7 +127,8 @@ var scripts = {
     'local jretry = cmsg["$retry"]',
     'if not jretry then jretry = false end',
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
-    'local payload = { queue = jqueue, jid = get_random_string(24), class = cmsg["$class"], retry = jretry }',
+    'local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }',
+    'if ARGV[1] == "sidekiq" then payload["jid"] = get_random_string(24) end',
     'cmsg["$class"] = nil',
     'payload["args"] = cmsg["$args"]',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
@@ -144,9 +145,9 @@ scripts.bull = {
     'cmsg["$delay"] = nil',
     'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = ' + program.def_attempts + ' end',
     'if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end',
-    'redis.call("HMSET", "bull:" .. jqueue .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", jdelay, "timestamp", ARGV[1], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
+    'redis.call("HMSET", "bull:" .. jqueue .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
     'if jdelay > 0 then',
-    '  local timestamp = (tonumber(ARGV[1]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)',
+    '  local timestamp = (tonumber(ARGV[2]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)',
     '  redis.call("ZADD", "bull:" .. jqueue .. ":delayed", timestamp, jobId)',
     '  redis.call("PUBLISH", "bull:" .. jqueue .. ":delayed", (timestamp / 0x1000))',
     'else',
@@ -194,6 +195,7 @@ var work = () => {
   }
   
   args.push(
+    ptype,
     Date.now(), //timestamp
     Date.now()  //random seed
   )
