@@ -112,7 +112,7 @@ var scripts = {
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
     'local payload = { queue = jqueue, jid = ARGV[1], class = cmsg["$class"] }',
     'cmsg["$class"] = nil',
-    'payload["args"] = { cmsg }',
+    'payload["args"] = cmsg["$args"]',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
   ].join("\n")
 }
