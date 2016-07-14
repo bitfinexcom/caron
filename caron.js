@@ -127,7 +127,7 @@ var scripts = {
     'if not jretry then jretry = false end',
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
     'local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }',
-    'if ARGV[1] == "sidekiq" then',
+    'if (ARGV[1] == "sidekiq") or (ARGV[1] == "sidekiq") then',
     '  payload["created_at"] = ARGV[2]',
     '  if not cmsg["$jid"] then cmsg["$jid"] = get_random_string(24) end',
     '  payload["jid"] = cmsg["$jid"]',
