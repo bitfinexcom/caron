@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.14')
+  .version('0.0.15')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
@@ -135,10 +135,10 @@ var scripts = {
     '  payload["backtrace"] = cmsg["$backtrace"]',
     'end',
     'cmsg["$class"] = nil',
-    'if not cmsg["$args"] then cmsg["$args"] = "ARRAY_EMPTY" end',
+    'if (not cmsg["$args"]) or (type(cmsg["$args"]) ~= "table") or (next(cmsg["$args"]) == nil) then cmsg["$args"] = "ARRAY_EMPTY" end',
     'payload["args"] = cmsg["$args"]',
     'payload = cjson.encode(payload)',
-    'payload = string.gsub(payload, "ARRAY_EMPTY", "[]")',
+    'payload = string.gsub(payload, \'"ARRAY_EMPTY"\', "[]")',
     'payload = string.gsub(payload, \':{}\', ":null")',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
   ].join("\n")
