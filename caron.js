@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.14')
+  .version('0.0.16')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
@@ -127,12 +127,19 @@ var scripts = {
     'if not jretry then jretry = false end',
     'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
     'local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }',
-    'if ARGV[1] == "sidekiq" then',
+    'if (ARGV[1] == "sidekiq") or (ARGV[1] == "sidekiq") then',
+    '  payload["created_at"] = ARGV[2]',
     '  if not cmsg["$jid"] then cmsg["$jid"] = get_random_string(24) end',
     '  payload["jid"] = cmsg["$jid"]',
+    '  if not cmsg["$backtrace"] then cmsg["$backtrace"] = false end',
+    '  payload["backtrace"] = cmsg["$backtrace"]',
     'end',
     'cmsg["$class"] = nil',
+    'if (not cmsg["$args"]) or (type(cmsg["$args"]) ~= "table") or (next(cmsg["$args"]) == nil) then cmsg["$args"] = "ARRAY_EMPTY" end',
     'payload["args"] = cmsg["$args"]',
+    'payload = cjson.encode(payload)',
+    'payload = string.gsub(payload, \'"ARRAY_EMPTY"\', "[]")',
+    'payload = string.gsub(payload, \':{}\', ":null")',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
   ].join("\n")
 }
@@ -165,13 +172,13 @@ scripts.bull = {
 
 scripts.sidekiq = {
   lua: scripts.ruby_common_1 + "\n" + [
-    'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, cjson.encode(payload))',
+    'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)',
   ].join("\n")
 }
   
 scripts.resque = {
   lua: scripts.ruby_common_1 + "\n" + [
-    'redis.call("RPUSH", "' + program.q_prefix + 'queue:" .. jqueue, cjson.encode(payload))',
+    'redis.call("RPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)',
   ].join("\n")
 }
 
