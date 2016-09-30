@@ -5,12 +5,12 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.15')
+  .version('0.0.16')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
   .option('-f, --freq <n>', 'poll frequency (in milliseconds) - default: 10', parseInt)
-  .option('-b, --batch <n>', 'max number of jobs created per batch - default: 1000', parseInt)
+  .option('-b, --batch <n>', 'max number of jobs created per batch - default: 100', parseInt)
   .option('--q_prefix <val>', 'redis queue prefix (i.e: "resque" or "bull")')
   .option('--def_queue <val>', 'default dest queue - default: default')
   .option('--def_worker <val>', 'default Job Queue worker - default: BaseJob')
@@ -21,7 +21,7 @@ program
 
 if (!program.redis) program.redis = 'redis://127.0.0.1:6379'
 if (!program.freq || program.freq < 1) program.freq = 10
-if (!program.batch) program.batch = 1000
+if (!program.batch) program.batch = 100
 if (!program.def_queue) program.def_queue = 'default'
 if (!program.def_worker) program.def_worker = 'BaseJob'
 if (!program.def_attempts) program.def_attempts = 1
@@ -106,6 +106,7 @@ var scripts = {
     'local cnt = 0',
     'local err = 0',
     'while ((redis.call("LLEN", "' + program.list + '") ~= 0) and (cnt < ' + program.batch + ')) do',
+    '  cnt = cnt + 1',
     '  local msg = redis.call("RPOP", "' + program.list + '")',
     '  if not msg then break end',
     '  local cmsg = cjson.decode(msg)',
@@ -118,7 +119,6 @@ var scripts = {
     '  cmsg["$queue"] = nil'
   ].join("\n"),
   suffix: [
-    '  cnt = cnt + 1',
     'end',
     'return {err, cnt}'
   ].join("\n"),

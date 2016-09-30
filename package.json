@@ -1,6 +1,6 @@
 {
   "name": "caron",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "private": false,
   "description": "Atomic job enqueuer from Redis lists to popular Job Queues (Sidekiq, Resque, Bull, ...)",
   "author": {
