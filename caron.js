@@ -109,8 +109,8 @@ var scripts = {
     '  cnt = cnt + 1',
     '  local msg = redis.call("RPOP", "' + program.list + '")',
     '  if not msg then break end',
-    '  local cmsg = cjson.decode(msg)',
-    '  if not cmsg or type(cmsg) ~= "table" then',
+    '  local valid_json, cmsg = pcall(cjson.decode, msg)',
+    '  if not valid_json or not cmsg or type(cmsg) ~= "table" then',
     '    err = -2',
     '    break',
     '  end',
@@ -186,6 +186,7 @@ scripts.resque = {
 
 var script = [scripts.prefix, scripts[ptype].lua, scripts.suffix].join("\n")
 
+
 redis.defineCommand('qwork', {
   lua: script,
   numberOfKeys: 0
@@ -202,6 +203,7 @@ var work = () => {
   
   if (rseed < STATUS.rseed) {
     setTimeout(work, 5)
+    return
   }
 
   var args = []
