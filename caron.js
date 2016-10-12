@@ -114,7 +114,9 @@ var scripts = {
     '    err = -2',
     '    break',
     '  end',
-    '  if not cmsg["$queue"] then cmsg["$queue"] = "' + program.def_queue + '" end',
+    '  if not cmsg["$queue"] then',
+    '    cmsg["$queue"] = "' + program.def_queue + '"',
+    '  end',
     '  local jqueue = cmsg["$queue"]',
     '  cmsg["$queue"] = nil'
   ].join("\n"),
