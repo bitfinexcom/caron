@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const program = require('commander')
 
 program
-  .version('0.0.19')
+  .version('0.0.20')
   .option('-t, --type <val>', 'queue type [sidekiq | bull | resque]')
   .option('-l, --list <val>', 'source redis list (i.e: global_jobs)')
   .option('-r, --redis <val>', 'redis url (i.e: redis://127.0.0.1:6379)')
@@ -156,7 +156,7 @@ scripts.bull = {
     'cmsg["$delay"] = nil',
     'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = ' + program.def_attempts + ' end',
     'if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end',
-    'redis.call("HMSET", "bull:" .. jqueue .. ":" .. jobId, "data", msg, "opts", "{}", "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
+    'redis.call("HMSET", "bull:" .. jqueue .. ":" .. jobId, "data", cjson.encode(cmsg), "opts", "{}", "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
     'if jdelay > 0 then',
     '  local timestamp = (tonumber(ARGV[2]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)',
     '  redis.call("ZADD", "bull:" .. jqueue .. ":delayed", timestamp, jobId)',
