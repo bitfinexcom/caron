@@ -3,7 +3,7 @@
 const Redis = require('ioredis')
 const crypto = require('crypto')
 
-const cli = require('yargs')
+const program = require('yargs')
   .option('t', {
     describe: 'queue type',
     alias: 'type',
@@ -13,65 +13,62 @@ const cli = require('yargs')
   .option('l', {
     describe: 'source redis list (e.g: `my_job_queue`)',
     alias: 'list',
-    demand: true
+    demand: true,
+    type: 'string'
   })
   .option('r', {
     describe: 'redis url',
     alias: 'redis',
-    default: 'redis://127.0.0.1:6379'
+    default: 'redis://127.0.0.1:6379',
+    type: 'string'
   })
   .option('f', {
     describe: 'poll frequency (milliseconds)',
     alias: 'freq',
-    default: 10 
+    default: 10,
+    type: 'number'
   })
-  .number('f')
   .option('b', {
     describe: 'max number of jobs processed per batch',
     alias: 'batch',
-    default: 100
+    default: 100,
+    type: 'number'
   })
-  .number('b')
   .option('q_prefix', {
     describe: 'redis queue prefix (e.g: "production:")',
-    default: ''
+    default: '',
+    type: 'string'
   })
   .option('q_lifo', {
     describe: 'Bull LIFO mode',
-    default: false
+    default: false,
+    type: 'boolean'
   })
-  .boolean('q_lifo')
   .option('def_queue', {
     describe: 'default destination queue',
-    default: 'dafault'
+    default: 'default',
+    type: 'string'
   })
   .option('def_worker', {
     describe: 'default job queue worker',
-    default: 'BaseJob'
+    default: 'BaseJob',
+    type: 'string'
   })
-  .number('def_attempts')
-   .option('def_attempts', {
+  .option('def_attempts', {
     describe: 'default job attempts',
-    default: 1
+    default: 1,
+    type: 'number'
   })
-  .number('def_attempts')
   .boolean('debug')
   .help('help')
   .version()
   .usage('Usage: $0 -t <val> -l <val> -r <val>')
   .argv
 
-var showHelp = false
-var ptype = cli.type
-var debug = cli.debug
+const ptype = program.type
+const debug = program.debug
 
-switch (ptype) {
-  case 'resque':
-    if (!cli.q_prefix) cli.q_prefix = 'resque:'
-    break
-}
-
-console.log('caron(' + cli.redis + '/' + cli.list + '/' + cli.type + ')')
+console.log('caron(' + program.redis + '/' + program.list + '/' + program.type + ')')
 
 if (debug) console.log('started')
 
@@ -86,7 +83,7 @@ Redis.Promise.onPossiblyUnhandledRejection(e => {
   console.log(e)
 })
 
-var redis = Redis.createClient(cli.redis, {
+var redis = Redis.createClient(program.redis, {
   dropBufferSupport: true
 })
 
@@ -112,9 +109,9 @@ var scripts = {
     'end',
     'local cnt = 0',
     'local err = 0',
-    'while ((redis.call("LLEN", "' + cli.list + '") ~= 0) and (cnt < ' + cli.batch + ')) do',
+    'while ((redis.call("LLEN", "' + program.list + '") ~= 0) and (cnt < ' + program.batch + ')) do',
     '  cnt = cnt + 1',
-    '  local msg = redis.call("RPOP", "' + cli.list + '")',
+    '  local msg = redis.call("RPOP", "' + program.list + '")',
     '  if not msg then break end',
     '  local valid_json, cmsg = pcall(cjson.decode, msg)',
     '  if not valid_json or not cmsg or type(cmsg) ~= "table" then',
@@ -122,7 +119,7 @@ var scripts = {
     '    break',
     '  end',
     '  if not cmsg["$queue"] then',
-    '    cmsg["$queue"] = "' + cli.def_queue + '"',
+    '    cmsg["$queue"] = "' + program.def_queue + '"',
     '  end',
     '  local jqueue = cmsg["$queue"]',
     '  cmsg["$queue"] = nil'
@@ -134,7 +131,7 @@ var scripts = {
   ruby_common_1: [
     'local jretry = cmsg["$retry"]',
     'if not jretry then jretry = false end',
-    'if not cmsg["$class"] then cmsg["$class"] = "' + cli.def_worker + '" end',
+    'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
     'local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }',
     'if (ARGV[1] == "sidekiq") or (ARGV[1] == "sidekiq") then',
     '  payload["created_at"] = ARGV[2]',
@@ -149,19 +146,19 @@ var scripts = {
     'payload = cjson.encode(payload)',
     'payload = string.gsub(payload, \'"ARRAY_EMPTY"\', "[]")',
     'payload = string.gsub(payload, \':{}\', ":null")',
-    'redis.call("SADD", "' + cli.q_prefix + 'queues", jqueue)'
+    'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
   ].join("\n")
 }
 
 scripts.bull = {
   lua: [
-    'local pushCmd = "' + (cli.q_lifo ? 'R' : 'L') + 'PUSH"',
+    'local pushCmd = "' + (program.q_lifo ? 'R' : 'L') + 'PUSH"',
     'local jobId = redis.call("INCR", "bull:" .. jqueue .. ":id")',
     'local jattempts = cmsg["$attempts"]',
     'local jdelay = cmsg["$delay"]',
     'cmsg["$attempts"] = nil',
     'cmsg["$delay"] = nil',
-    'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = ' + cli.def_attempts + ' end',
+    'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = ' + program.def_attempts + ' end',
     'if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end',
     'redis.call("HMSET", "bull:" .. jqueue .. ":" .. jobId, "data", cjson.encode(cmsg), "opts", "{}", "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
     'if jdelay > 0 then',
@@ -181,13 +178,13 @@ scripts.bull = {
 
 scripts.sidekiq = {
   lua: scripts.ruby_common_1 + "\n" + [
-    'redis.call("LPUSH", "' + cli.q_prefix + 'queue:" .. jqueue, payload)',
+    'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)',
   ].join("\n")
 }
   
 scripts.resque = {
   lua: scripts.ruby_common_1 + "\n" + [
-    'redis.call("RPUSH", "' + cli.q_prefix + 'queue:" .. jqueue, payload)',
+    'redis.call("RPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)',
   ].join("\n")
 }
 
@@ -241,7 +238,7 @@ var work = () => {
         console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
       }
 
-      setTimeout(work, cli.freq)
+      setTimeout(work, program.freq)
     }
   )
 
