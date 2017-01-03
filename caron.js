@@ -72,27 +72,26 @@ console.log('caron(' + program.redis + '/' + program.list + '/' + program.type +
 
 if (debug) console.log('started')
 
-var STATUS = {
+const STATUS = {
   active: 1,
   processing: 0,
   rseed: Date.now()
 }
 
 Redis.Promise.onPossiblyUnhandledRejection(e => {
+  console.error(e)
   STATUS.processing = 0
-  console.log(e)
+  stop()
 })
 
-var redis = Redis.createClient(program.redis, {
-  dropBufferSupport: true
-})
+const redis = Redis.createClient(program.redis)
 
 redis.on('error', e => {
   STATUS.processing = 0
   console.log(e)
 })
 
-var scripts = {
+const scripts = {
   prefix: [
     'math.randomseed(tonumber(ARGV[3]))',
     'local function get_random_string(length)',
@@ -200,27 +199,26 @@ scripts.resque = {
 
 var script = [scripts.prefix, scripts[ptype].lua, scripts.suffix].join("\n")
 
-
 redis.defineCommand('qwork', {
   lua: script,
   numberOfKeys: 0
 })
 
-var elapsed_time = (start) => {
+const elapsed_time = (start) => {
   return process.hrtime(start)
 }
 
-var work = () => {
+const work = () => {
   if (!STATUS.active || STATUS.processing) return
 
-  var rseed = Date.now()
+  const rseed = Date.now()
   
   if (rseed < STATUS.rseed) {
     setTimeout(work, 5)
     return
   }
 
-  var args = []
+  const args = []
   var ts_start = null
   
   if (debug) {
@@ -239,7 +237,7 @@ var work = () => {
 
       if (err) {
         console.error(err)
-        process.exit()
+        stop()
         return
       }
 
@@ -261,17 +259,18 @@ var work = () => {
 
 work()
 
-var stop = () => {
+const stop = () => {
+  if (!STATUS.active) return
+
   STATUS.active = 0
   
   if (debug) console.log('stopping...')
   
   setInterval(() => {
-    if (!STATUS.processing) {
-      if (debug) console.log('stopped')
-      process.exit()
-    }
-  }, 100)
+    if (STATUS.processing) return
+    if (debug) console.log('stopped')
+    process.exit()
+  }, 250)
 }
 
 process.on('SIGINT', () => {
