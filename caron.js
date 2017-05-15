@@ -1,7 +1,6 @@
 'use strict'
 
 const Redis = require('ioredis')
-const crypto = require('crypto')
 
 const program = require('yargs')
   .option('t', {
@@ -122,11 +121,11 @@ const scripts = {
     '  end',
     '  local jqueue = cmsg["$queue"]',
     '  cmsg["$queue"] = nil'
-  ].join("\n"),
+  ].join('\n'),
   suffix: [
     'end',
     'return {err, cnt}'
-  ].join("\n"),
+  ].join('\n'),
   ruby_common_1: [
     'local jretry = cmsg["$retry"]',
     'if not jretry then jretry = false end',
@@ -146,7 +145,7 @@ const scripts = {
     'payload = string.gsub(payload, \'"ARRAY_EMPTY"\', "[]")',
     'payload = string.gsub(payload, \':{}\', ":null")',
     'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
-  ].join("\n")
+  ].join('\n')
 }
 
 scripts.bull = {
@@ -182,29 +181,29 @@ scripts.bull = {
     '    redis.call("PUBLISH", "bull:" .. jqueue .. ":jobs", jobId)',
     '  end',
     'end'
-  ].join("\n")
+  ].join('\n')
 }
 
 scripts.sidekiq = {
-  lua: scripts.ruby_common_1 + "\n" + [
-    'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)',
-  ].join("\n")
-}
-  
-scripts.resque = {
-  lua: scripts.ruby_common_1 + "\n" + [
-    'redis.call("RPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)',
-  ].join("\n")
+  lua: scripts.ruby_common_1 + '\n' + [
+    'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)'
+  ].join('\n')
 }
 
-var script = [scripts.prefix, scripts[ptype].lua, scripts.suffix].join("\n")
+scripts.resque = {
+  lua: scripts.ruby_common_1 + '\n' + [
+    'redis.call("RPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)'
+  ].join('\n')
+}
+
+var script = [scripts.prefix, scripts[ptype].lua, scripts.suffix].join('\n')
 
 redis.defineCommand('qwork', {
   lua: script,
   numberOfKeys: 0
 })
 
-const elapsed_time = (start) => {
+const elapsedTime = (start) => {
   return process.hrtime(start)
 }
 
@@ -212,25 +211,25 @@ const work = () => {
   if (!STATUS.active || STATUS.processing) return
 
   const rseed = Date.now()
-  
+
   if (rseed < STATUS.rseed) {
     setTimeout(work, 5)
     return
   }
 
   const args = []
-  var ts_start = null
-  
+  var startTs = null
+
   if (debug) {
-    ts_start = process.hrtime()
+    startTs = process.hrtime()
   }
-  
+
   args.push(
     ptype,
-    Date.now(), //timestamp
+    Date.now(), // timestamp
     rseed
   )
-  
+
   args.push(
     (err, res) => {
       STATUS.processing = 0
@@ -242,7 +241,7 @@ const work = () => {
       }
 
       if (debug) {
-        let elapsed = elapsed_time(ts_start)
+        let elapsed = elapsedTime(startTs)
         console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
       }
 
@@ -263,9 +262,9 @@ const stop = () => {
   if (!STATUS.active) return
 
   STATUS.active = 0
-  
+
   if (debug) console.log('stopping...')
-  
+
   setInterval(() => {
     if (STATUS.processing) return
     if (debug) console.log('stopped')
