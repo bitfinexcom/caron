@@ -1,6 +1,6 @@
 # caron
 
-Atomic Job enqueuer from Redis lists to popular Job Queues (Sidekiq, Resque, Bull, ...)
+Atomic Job enqueuer from Redis lists to popular Job Queues (Sidekiq, Bull, ...)
 
 **Caron** pops messages from a redis list and atomically creates a Job for the specified Job Queue.
 
@@ -8,9 +8,8 @@ Uses `lua` scripting internally to provide atomicity (http://redis.io/commands/E
 
 ### Support
 
-* [Sidekiq-4.1.2](https://github.com/mperham/sidekiq)
-* [Resque-1.2.6](https://github.com/resque/resque)
-* [Bull-1.0.0](https://github.com/OptimalBits/bull)
+* [Sidekiq-5.0.4](https://github.com/mperham/sidekiq)
+* [Bull-3.2.0](https://github.com/OptimalBits/bull)
 
 ### Install
 ```
@@ -27,12 +26,12 @@ $ caron --help
 
     -h, --help            output usage information
     -V, --version         output the version number
-    -t, --type <val>      queue type [sidekiq | bull | resque]
+    -t, --type <val>      queue type [sidekiq | bull]
     -l, --list <val>      source redis list (i.e: global_jobs)
     -r, --redis <val>     redis url (i.e: redis://127.0.0.1:6379)
     -f, --freq <n>        poll frequency (in milliseconds) - default: 10
     -b, --batch <n>       max number of jobs created per batch - default: 1000
-    --q_prefix <val>      redis queue prefix (i.e: "resque" or "bull")
+    --q_prefix <val>      redis queue prefix (i.e: "bull")
     --def_queue <val>     default dest queue - default: default
     --def_worker <val>    default Job Queue worker - default: BaseJob
     --def_attempts <val>  default Bull Job attempts - default: 1
@@ -49,7 +48,7 @@ caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq
 
 ##### Push from redis-cli
 ```
-// Sidekiq/Resque job enqueue
+// Sidekiq job enqueue
 redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\",\"other\":{\"f\":5}}"
 
 // Bull job enqueue
@@ -66,7 +65,6 @@ const Redis = require('ioredis')
 var redis = new Redis()
 
 redis.lpush('sidekiq_test', JSON.stringify({ foo: 'bar', '$queue': 'critical', '$class': 'MyCriticalJob', other: { a: 1, b: 2 } }))
-redis.lpush('resque_test', JSON.stringify({ foo: 'bar', '$queue': 'critical', '$class': 'MyCriticalJob', other: { a: 1, b: 2 } }))
 redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'priority', '$attempts': 5, other: { a: 1, b: 2 } }))
 redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'lazy', '$attempts': 1, '$delay': 5000, other: { a: 1, b: 2 } }))
 ```

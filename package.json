@@ -1,8 +1,8 @@
 {
   "name": "caron",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
-  "description": "Atomic job enqueuer from Redis lists to popular Job Queues (Sidekiq, Resque, Bull, ...)",
+  "description": "Atomic job enqueuer from Redis lists to popular Job Queues (Sidekiq, Bull, ...)",
   "author": {
     "name": "prdn",
     "email": "paolo@bitfinex.com"
@@ -11,7 +11,7 @@
     "bitfinex"
   ],
   "dependencies": {
-    "ioredis": "^3.1.1",
+    "ioredis": "^3.1.4",
     "lodash": "^4.17.4",
     "yargs": "^6.3.0"
   },

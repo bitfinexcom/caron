@@ -6,7 +6,7 @@ const program = require('yargs')
   .option('t', {
     describe: 'queue type',
     alias: 'type',
-    choices: ['sidekiq', 'bull', 'resque'],
+    choices: ['sidekiq', 'bull'],
     demand: true
   })
   .option('l', {
@@ -178,7 +178,7 @@ scripts.bull = {
     '    else',
     '      redis.call(pushCmd, "bull:" .. jqueue .. ":paused", jobId)',
     '    end',
-    '    redis.call("PUBLISH", "bull:" .. jqueue .. ":jobs", jobId)',
+    '    redis.call("PUBLISH", "bull:" .. jqueue .. ":waiting@null", jobId)',
     '  end',
     'end'
   ].join('\n')
@@ -187,12 +187,6 @@ scripts.bull = {
 scripts.sidekiq = {
   lua: scripts.ruby_common_1 + '\n' + [
     'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)'
-  ].join('\n')
-}
-
-scripts.resque = {
-  lua: scripts.ruby_common_1 + '\n' + [
-    'redis.call("RPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)'
   ].join('\n')
 }
 
