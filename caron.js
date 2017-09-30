@@ -24,7 +24,7 @@ const program = require('yargs')
   .option('f', {
     describe: 'poll frequency (milliseconds)',
     alias: 'freq',
-    default: 10,
+    default: 25,
     type: 'number'
   })
   .option('b', {
@@ -239,7 +239,7 @@ const work = () => {
         console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
       }
 
-      setTimeout(work, program.freq)
+      setTimeout(work, program.freq || 25)
     }
   )
 
