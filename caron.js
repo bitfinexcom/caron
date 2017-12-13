@@ -23,8 +23,11 @@ class Caron {
 
     this.redis = Redis.createClient(opts.redis)
     this.registerHandlers()
-    this.scripts = this.setupScripts(opts)
-    this.setupRedis(this.scripts)
+
+    const scripts = this.setupScripts(opts)
+    this.setupRedis(scripts)
+
+    return this
   }
 
   stop (cb) {
@@ -45,6 +48,8 @@ class Caron {
 
   start () {
     this.work()
+
+    return this
   }
 
   kill () {
@@ -60,7 +65,9 @@ class Caron {
     const rseed = Date.now()
 
     if (rseed < this.status.rseed) {
-      setTimeout(this.work, 5)
+      setTimeout(() => {
+        this.work()
+      }, 5)
       return
     }
 
@@ -94,7 +101,9 @@ class Caron {
           console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
         }
 
-        setTimeout(this.work, this.freq || 25)
+        setTimeout(() => {
+          this.work()
+        }, this.freq || 25)
       }
     )
 
@@ -121,11 +130,15 @@ class Caron {
   }
 
   setupRedis (scripts) {
+    const debug = this.debug
+
     const script = [
       scripts.prefix,
       scripts[this.ptype].lua,
       scripts.suffix
     ].join('\n')
+
+    if (debug) console.log(script)
 
     this.redis.defineCommand('qwork', {
       lua: script,

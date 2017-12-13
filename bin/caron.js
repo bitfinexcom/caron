@@ -68,7 +68,7 @@ const program = require('yargs')
 
 console.log('caron(' + program.redis + '/' + program.list + '/' + program.type + ')')
 
-const caron = new Caron(program)
+const caron = new Caron(program).start()
 process.on('SIGINT', () => {
   caron.stop(() => {
     process.exit()
