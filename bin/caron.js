@@ -60,7 +60,6 @@ const program = require('yargs')
     default: 1,
     type: 'number'
   })
-  .boolean('debug')
   .help('help')
   .version()
   .usage('Usage: $0 -t <val> -l <val> -r <val>')

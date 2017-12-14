@@ -1,5 +1,7 @@
 'use strict'
 
+const debug = require('debug')('caron:caron')
+
 const Redis = require('ioredis')
 
 const elapsedTime = (start) => {
@@ -9,13 +11,12 @@ const elapsedTime = (start) => {
 class Caron {
   constructor (opts) {
     this.status = {
-      active: 1,
-      processing: 0,
+      active: true,
+      processing: false,
       rseed: Date.now()
     }
 
-    this.debug = opts.debug
-    if (this.debug) console.log('started')
+    debug('started')
 
     this.ptype = opts.type
     this.freq = opts.freq
@@ -26,20 +27,18 @@ class Caron {
 
     const scripts = this.setupScripts(opts)
     this.setupRedis(scripts)
-
-    return this
   }
 
   stop (cb) {
     if (!this.status.active) return
 
-    this.status.active = 0
+    this.status.active = false
 
-    if (this.debug) console.log('stopping...')
+    debug('stopping...')
 
     this.stopInter = setInterval(() => {
       if (this.status.processing) return
-      if (this.debug) console.log('stopped')
+      debug('stopped')
 
       clearInterval(this.stopInter)
       cb(null)
@@ -58,8 +57,6 @@ class Caron {
   }
 
   work () {
-    const debug = this.debug
-
     if (!this.status.active || this.status.processing) return
 
     const rseed = Date.now()
@@ -86,7 +83,7 @@ class Caron {
 
     args.push(
       (err, res) => {
-        this.status.processing = 0
+        this.status.processing = false
 
         if (err) {
           console.error(err)
@@ -96,9 +93,9 @@ class Caron {
           return
         }
 
-        if (debug) {
+        if (debug.enabled) {
           let elapsed = elapsedTime(startTs)
-          console.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
+          debug(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
         }
 
         setTimeout(() => {
@@ -107,7 +104,7 @@ class Caron {
       }
     )
 
-    this.status.processing = 1
+    this.status.processing = true
 
     this.redis.qwork.apply(
       this.redis, args
@@ -117,28 +114,26 @@ class Caron {
   registerHandlers () {
     Redis.Promise.onPossiblyUnhandledRejection(e => {
       console.error(e)
-      this.status.processing = 0
+      this.status.processing = false
       this.stop(() => {
         this.kill()
       })
     })
 
     this.redis.on('error', e => {
-      this.status.processing = 0
+      this.status.processing = false
       console.log(e)
     })
   }
 
   setupRedis (scripts) {
-    const debug = this.debug
-
     const script = [
       scripts.prefix,
       scripts[this.ptype].lua,
       scripts.suffix
     ].join('\n')
 
-    if (debug) console.log(script)
+    debug(script)
 
     this.redis.defineCommand('qwork', {
       lua: script,

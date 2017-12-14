@@ -6,17 +6,18 @@ Atomic Job enqueuer from Redis lists to popular Job Queues (Sidekiq, Bull, ...)
 
 Uses `lua` scripting internally to provide atomicity (http://redis.io/commands/EVAL)
 
-### Support
+## Support
 
 * [Sidekiq-5.0.4](https://github.com/mperham/sidekiq)
 * [Bull-3.2.0](https://github.com/OptimalBits/bull)
 
-### Install
+## Install
 ```
 npm install -g caron
 ```
 
-### Usage
+## Usage
+
 ```
 $ caron --help
 
@@ -36,12 +37,17 @@ $ caron --help
     --def_worker <val>    default Job Queue worker - default: BaseJob
     --def_attempts <val>  default Bull Job attempts - default: 1
     --q_lifo              Bull LIFO mode
-    --debug               debug
 
 ```
 
 ```
 caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq 25
+```
+
+Debug mode:
+
+```
+DEBUG=caron:* caron -t bull -l bull_test
 ```
 
 ### Examples
