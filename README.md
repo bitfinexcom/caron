@@ -53,7 +53,8 @@ DEBUG=caron:* caron -t bull -l bull_test
 ### Examples
 
 ##### Push from redis-cli
-```
+
+```bash
 // Sidekiq job enqueue
 redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\",\"other\":{\"f\":5}}"
 
@@ -63,7 +64,7 @@ redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"foo\":
 
 ##### Push from Node.js
 
-```
+```js
 'use strict'
 
 const Redis = require('ioredis')
@@ -77,7 +78,7 @@ redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'lazy', '$attemp
 
 ##### Push from Ruby
 
-```
+```ruby
 require 'redis'
 require 'json'
 
