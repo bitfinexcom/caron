@@ -20,7 +20,7 @@ class Caron {
 
     this.ptype = opts.type
     this.freq = opts.freq
-    this.kill = opts.kill || true
+    this.exit = opts.exit || true
 
     this.redis = Redis.createClient(opts.redis)
     this.registerHandlers()
@@ -52,7 +52,7 @@ class Caron {
   }
 
   kill () {
-    if (!this.kill) return
+    if (!this.exit) return
     process.exit()
   }
 

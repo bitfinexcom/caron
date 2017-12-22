@@ -28,7 +28,7 @@ describe('integration', () => {
       def_queue: 'default',
       def_worker: 'BaseJob',
       def_attempts: 1,
-      kill: false,
+      exit: false,
       debug: false
     })
 
