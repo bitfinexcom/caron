@@ -112,14 +112,6 @@ class Caron {
   }
 
   registerHandlers () {
-    Redis.Promise.onPossiblyUnhandledRejection(e => {
-      console.error(e)
-      this.status.processing = false
-      this.stop(() => {
-        this.kill()
-      })
-    })
-
     this.redis.on('error', e => {
       this.status.processing = false
       console.log(e)
