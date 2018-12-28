@@ -64,7 +64,7 @@ class Caron {
     if (rseed < this.status.rseed) {
       setTimeout(() => {
         this.work()
-      }, 5)
+      }, 10)
       return
     }
 
@@ -100,7 +100,7 @@ class Caron {
 
         setTimeout(() => {
           this.work()
-        }, this.freq || 25)
+        }, this.freq || 50)
       }
     )
 

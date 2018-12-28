@@ -41,7 +41,7 @@ const program = require('yargs')
   .option('f', {
     describe: 'poll frequency (milliseconds)',
     alias: 'freq',
-    default: 25,
+    default: 50,
     type: 'number'
   })
   .option('b', {
