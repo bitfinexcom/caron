@@ -18,10 +18,25 @@ const program = require('yargs')
     type: 'string'
   })
   .option('r', {
-    describe: 'redis url',
+    describe: 'redis url or sentinel master',
     alias: 'redis',
     default: 'redis://127.0.0.1:6379',
     type: 'string'
+  })
+  .option('redis_sentinels', {
+    describe: 'redis sentinels',
+    type: 'string'
+  })
+  .coerce('redis_sentinels', val => {
+    if (!val) {
+      return null
+    }
+
+    try {
+      return JSON.parse(val)
+    } catch (e) {
+      throw new Error('redis_sentinels: JSON format invalid')
+    }
   })
   .option('f', {
     describe: 'poll frequency (milliseconds)',
@@ -66,6 +81,15 @@ const program = require('yargs')
   .argv
 
 console.log('caron(' + program.redis + '/' + program.list + '/' + program.type + ')')
+
+if (program.redis_sentinels) {
+  const redis_name =  program.redis
+
+  program.redis = {
+    name: redis_name,
+    sentinels: program.redis_sentinels
+  }
+}
 
 const caron = new Caron(program).start()
 process.on('SIGINT', () => {

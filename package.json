@@ -1,6 +1,6 @@
 {
   "name": "caron",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Atomic job enqueuer from Redis lists to popular Job Queues (Sidekiq, Bull, ...)",
   "author": {
     "name": "prdn",
@@ -11,9 +11,9 @@
   ],
   "dependencies": {
     "debug": "^3.1.0",
-    "ioredis": "^3.2.0",
-    "lodash": "^4.17.4",
-    "yargs": "^6.3.0"
+    "ioredis": "^4.3.1",
+    "lodash": "^4.17.11",
+    "yargs": "^12.0.5"
   },
   "engine": {
     "node": ">=6.0"
