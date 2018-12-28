@@ -33,8 +33,7 @@
     "url": "git+https://github.com/bitfinexcom/caron.git"
   },
   "devDependencies": {
-    "bull": "^3.3.7",
-    "mocha": "^4.0.1",
-    "standard": "^10.0.3"
+    "mocha": "^5.0.1",
+    "standard": "^12.0.1"
   }
 }
