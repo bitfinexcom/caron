@@ -3,6 +3,8 @@
 const debug = require('debug')('caron:caron')
 
 const Redis = require('ioredis')
+const fs = require('fs')
+const { join } = require('path')
 
 const elapsedTime = (start) => {
   return process.hrtime(start)
@@ -16,11 +18,23 @@ class Caron {
       rseed: Date.now()
     }
 
+    this.engines = ['bull', 'sidekiq']
+
     debug('started')
 
     this.ptype = opts.type
     this.freq = opts.freq
     this.exit = opts.exit || true
+    if (opts.q_lifo) {
+      opts.q_lifo = 'R'
+    } else {
+      opts.q_lifo = 'L'
+    }
+
+    if (!this.engines.includes(this.ptype)) {
+      console.error(`not a supported engine ${this.ptype}`)
+      process.exit(1)
+    }
 
     this.redis = Redis.createClient(opts.redis)
     this.registerHandlers()
@@ -119,122 +133,28 @@ class Caron {
   }
 
   setupRedis (scripts) {
-    const script = [
-      scripts.prefix,
-      scripts[this.ptype].lua,
-      scripts.suffix
-    ].join('\n')
-
-    debug(script)
+    debug(scripts[this.ptype].lua)
 
     this.redis.defineCommand('qwork', {
-      lua: script,
+      ...scripts[this.ptype],
       numberOfKeys: 0
     })
   }
 
-  setupScripts (program) {
-    const scripts = {
-      prefix: [
-        'math.randomseed(tonumber(ARGV[3]))',
-        'local function get_random_string(length)',
-        '  local str = ""',
-        '  for i = 1, length do',
-        '    local rid = math.random()',
-        '    if rid < 0.3333 then',
-        '      str = str..string.char(math.random(48, 57))',
-        '    else',
-        '      str = str..string.char(math.random(97, 122))',
-        '    end',
-        '  end',
-        '  return str',
-        'end',
-        'local cnt = 0',
-        'local err = 0',
-        'while ((redis.call("LLEN", "' + program.list + '") ~= 0) and (cnt < ' + program.batch + ')) do',
-        '  cnt = cnt + 1',
-        '  local msg = redis.call("RPOP", "' + program.list + '")',
-        '  if not msg then break end',
-        '  local valid_json, cmsg = pcall(cjson.decode, msg)',
-        '  if not valid_json or not cmsg or type(cmsg) ~= "table" then',
-        '    err = -2',
-        '    break',
-        '  end',
-        '  if not cmsg["$queue"] then',
-        '    cmsg["$queue"] = "' + program.def_queue + '"',
-        '  end',
-        '  local jqueue = cmsg["$queue"]',
-        '  cmsg["$queue"] = nil'
-      ].join('\n'),
-      suffix: [
-        'end',
-        'return {err, cnt}'
-      ].join('\n'),
-      ruby_common_1: [
-        'local jretry = cmsg["$retry"]',
-        'if not jretry then jretry = false end',
-        'if not cmsg["$class"] then cmsg["$class"] = "' + program.def_worker + '" end',
-        'local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }',
-        'if (ARGV[1] == "sidekiq") or (ARGV[1] == "sidekiq") then',
-        '  payload["created_at"] = ARGV[2]',
-        '  if not cmsg["$jid"] then cmsg["$jid"] = get_random_string(24) end',
-        '  payload["jid"] = cmsg["$jid"]',
-        '  if not cmsg["$backtrace"] then cmsg["$backtrace"] = false end',
-        '  payload["backtrace"] = cmsg["$backtrace"]',
-        'end',
-        'cmsg["$class"] = nil',
-        'if (not cmsg["$args"]) or (type(cmsg["$args"]) ~= "table") or (next(cmsg["$args"]) == nil) then cmsg["$args"] = "ARRAY_EMPTY" end',
-        'payload["args"] = cmsg["$args"]',
-        'payload = cjson.encode(payload)',
-        'payload = string.gsub(payload, \'"ARRAY_EMPTY"\', "[]")',
-        'payload = string.gsub(payload, \':{}\', ":null")',
-        'redis.call("SADD", "' + program.q_prefix + 'queues", jqueue)'
-      ].join('\n')
+  setupScripts (program, engine = 'bull') {
+    const path = join(__dirname, './lua', `${engine}.lua`)
+    if (!fs.existsSync(path)) {
+      console.error(`lua script not found: ${path}`)
+      process.exit(1)
     }
 
-    scripts.bull = {
-      lua: [
-        'local pushCmd = "' + (program.q_lifo ? 'R' : 'L') + 'PUSH"',
-        'local jobId = redis.call("INCR", "bull:" .. jqueue .. ":id")',
-        'local jattempts = cmsg["$attempts"]',
-        'local jdelay = cmsg["$delay"]',
-        'local jobCustomId = cmsg["$jobId"]',
-        'if not(jobCustomId == nil or jobCustomId == "") then jobId = jobCustomId end',
-        'cmsg["$attempts"] = nil',
-        'cmsg["$delay"] = nil',
-        'cmsg["$jodId"] = nil',
-        'if (type(jattempts) ~= "number") or (jattempts <= 0) then jattempts = ' + program.def_attempts + ' end',
-        'if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end',
-        'local jopt0 = cmsg["$removeOnComplete"]',
-        'if (type(jopt0) ~= "boolean") then jopt0 = true end',
-        'local jopts = { removeOnComplete = jopt0 }',
-        'cmsg["$removeOnComplete"] = nil',
-        'local jobIdKey = "bull:" .. jqueue .. ":" .. jobId',
-        'if redis.call("EXISTS", jobIdKey) == 0 then',
-        '  redis.call("HMSET", jobIdKey, "data", cjson.encode(cmsg), "opts", cjson.encode(jopts), "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
-        '  if jdelay > 0 then',
-        '    local timestamp = (tonumber(ARGV[2]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)',
-        '    redis.call("ZADD", "bull:" .. jqueue .. ":delayed", timestamp, jobId)',
-        '    redis.call("PUBLISH", "bull:" .. jqueue .. ":delayed", (timestamp / 0x1000))',
-        '  else',
-        '    if redis.call("EXISTS", "bull:" .. jqueue .. ":meta-paused") ~= 1 then',
-        '      redis.call(pushCmd, "bull:" .. jqueue .. ":wait", jobId)',
-        '    else',
-        '      redis.call(pushCmd, "bull:" .. jqueue .. ":paused", jobId)',
-        '    end',
-        '    redis.call("PUBLISH", "bull:" .. jqueue .. ":waiting@null", jobId)',
-        '  end',
-        'end'
-      ].join('\n')
+    let lua = fs.readFileSync(path).toString('utf8')
+    for (const key in program) {
+      const needle = `PROGRAM_${key.toUpperCase()}`
+      lua = lua.replace(new RegExp(needle, 'g'), program[key])
     }
 
-    scripts.sidekiq = {
-      lua: scripts.ruby_common_1 + '\n' + [
-        'redis.call("LPUSH", "' + program.q_prefix + 'queue:" .. jqueue, payload)'
-      ].join('\n')
-    }
-
-    return scripts
+    return { [engine]: { lua } }
   }
 }
 

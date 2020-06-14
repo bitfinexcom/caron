@@ -33,7 +33,7 @@ describe('integration', () => {
     })
 
     testQueue.process((job, cb) => {
-      assert.stringEqual(job.data.foo, 'bar')
+      assert.strictEqual(job.data.foo, 'bar')
 
       cb(null)
       testQueue.close().then(() => {
