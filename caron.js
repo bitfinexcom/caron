@@ -2,9 +2,9 @@
 
 const debug = require('debug')('caron:caron')
 
+const { join } = require('path')
 const Redis = require('ioredis')
 const fs = require('fs')
-const { join } = require('path')
 
 const elapsedTime = (start) => {
   return process.hrtime(start)
@@ -25,11 +25,6 @@ class Caron {
     this.ptype = opts.type
     this.freq = opts.freq
     this.exit = opts.exit || true
-    if (opts.q_lifo) {
-      opts.q_lifo = 'R'
-    } else {
-      opts.q_lifo = 'L'
-    }
 
     if (!this.engines.includes(this.ptype)) {
       console.error(`not a supported engine ${this.ptype}`)
@@ -133,15 +128,19 @@ class Caron {
   }
 
   setupRedis (scripts) {
-    debug(scripts[this.ptype].lua)
+    const script = scripts[this.ptype]
+
+    debug(script.lua)
 
     this.redis.defineCommand('qwork', {
-      ...scripts[this.ptype],
+      ...script,
       numberOfKeys: 0
     })
   }
 
-  setupScripts (program, engine = 'bull') {
+  setupScripts (program) {
+    const engine = program.type || 'bull'
+
     const path = join(__dirname, './lua', `${engine}.lua`)
     if (!fs.existsSync(path)) {
       console.error(`lua script not found: ${path}`)
@@ -150,8 +149,14 @@ class Caron {
 
     let lua = fs.readFileSync(path).toString('utf8')
     for (const key in program) {
+      let val = program[key]
+      if (key === 'q_lifo' && val === true) {
+        val = 'R'
+      } else {
+        val = 'L'
+      }
       const needle = `PROGRAM_${key.toUpperCase()}`
-      lua = lua.replace(new RegExp(needle, 'g'), program[key])
+      lua = lua.replace(new RegExp(needle, 'g'), val)
     }
 
     return { [engine]: { lua } }

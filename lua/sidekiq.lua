@@ -32,7 +32,7 @@ while ((redis.call("LLEN", "PROGRAM_LIST") ~= 0) and (cnt < PROGRAM_BATCH)) do
   if not jretry then jretry = false end
   if not cmsg["$class"] then cmsg["$class"] = "PROGRAM_DEF_WORKER" end
   local payload = { queue = jqueue, class = cmsg["$class"], retry = jretry }
-  if (ARGV[1] == "sidekiq") or (ARGV[1] == "sidekiq") then
+  if (ARGV[1] == "sidekiq") then
     payload["created_at"] = ARGV[2]
     if not cmsg["$jid"] then cmsg["$jid"] = get_random_string(24) end
     payload["jid"] = cmsg["$jid"]

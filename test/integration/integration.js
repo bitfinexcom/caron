@@ -4,7 +4,7 @@
 
 const assert = require('assert')
 
-const Caron = require('../')
+const Caron = require('../../')
 const Redis = require('ioredis')
 const redis = new Redis()
 
