@@ -11,7 +11,7 @@ const redis = new Redis({})
 const fs = require('fs')
 
 const Caron = proxyquire('../caron', {
-  'ioredis': {
+  ioredis: {
     createClient: () => redis
   }
 })
@@ -47,21 +47,21 @@ describe('caron tests', () => {
   describe('setupScripts', () => {
     ['bull', 'sidekiq'].forEach(type => {
       describe(`${type} lua scripts`, () => {
-        for (let key in hashes[type]) {
+        for (const key in hashes[type]) {
           it(`creates valid lua script for ${key}`, (done) => {
             const opts = Object.keys(hashes[type]).reduce((acc, cv) => {
-              acc[cv] = hashes[type][cv]['orig_val']
+              acc[cv] = hashes[type][cv].orig_val
               return acc
             }, optsBase)
 
             caron = new Caron(opts)
-            opts['type'] = type
+            opts.type = type
             const curKey = hashes[type][key]
-            opts[key] = curKey['ctrl_val']
-            let scripts = caron.setupScripts(opts)
-            let hash = crypto.createHash('md5').update(scripts[type].lua).digest('hex')
+            opts[key] = curKey.ctrl_val
+            const scripts = caron.setupScripts(opts)
+            const hash = crypto.createHash('md5').update(scripts[type].lua).digest('hex')
 
-            assert.strictEqual(hash, curKey['ctrl'])
+            assert.strictEqual(hash, curKey.ctrl)
             done()
           })
         }
