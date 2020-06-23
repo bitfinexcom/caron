@@ -10,6 +10,11 @@ const redis = new Redis()
 
 const Queue = require('bull')
 const testQueue = new Queue('default')
+const defList = 'bull_test'
+
+before(() => {
+  redis.del(defList)
+})
 
 after(() => {
   redis.disconnect()
@@ -19,7 +24,7 @@ describe('integration', () => {
   it('pulls stuff from redis', (done) => {
     const caron = new Caron({
       type: 'bull',
-      list: 'bull_test',
+      list: defList,
       redis: 'redis://127.0.0.1:6379',
       freq: 25,
       batch: 100,
@@ -47,6 +52,6 @@ describe('integration', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', queue: 'default' })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 })

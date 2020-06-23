@@ -152,7 +152,7 @@ class Caron {
       let val = program[key]
       if (key === 'q_lifo' && val === true) {
         val = 'R'
-      } else {
+      } else if (key === 'q_lifo') {
         val = 'L'
       }
       const needle = `PROGRAM_${key.toUpperCase()}`
