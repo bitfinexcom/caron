@@ -94,7 +94,7 @@ class Caron {
         }
 
         if (debug.enabled) {
-          let elapsed = elapsedTime(startTs)
+          const elapsed = elapsedTime(startTs)
           debug(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
         }
 

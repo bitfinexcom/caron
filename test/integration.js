@@ -74,7 +74,7 @@ describe('bull params', () => {
 
     caron.start()
 
-    const payload = JSON.stringify({ foo: 'bar', '$queue': 'default-test' })
+    const payload = JSON.stringify({ foo: 'bar', $queue: 'default-test' })
     redis.lpush('bull_test', payload)
   })
 
@@ -96,7 +96,7 @@ describe('bull params', () => {
 
     caron.start()
 
-    const payload = JSON.stringify({ foo: 'bar', '$jobId': 'firstJob' })
+    const payload = JSON.stringify({ foo: 'bar', $jobId: 'firstJob' })
     redis.lpush('bull_test', payload)
   })
 
@@ -118,10 +118,10 @@ describe('bull params', () => {
 
     caron.start()
 
-    const payload = JSON.stringify({ foo: 'bar', '$delay': 1000 })
+    const payload = JSON.stringify({ foo: 'bar', $delay: 1000 })
     redis.lpush('bull_test', payload)
     setTimeout(() => {
-      redis.exists("bull:default:delayed").then((res) => {
+      redis.exists('bull:default:delayed').then((res) => {
         assert.strictEqual(res, 1)
       })
     }, 500)
@@ -145,7 +145,7 @@ describe('bull params', () => {
 
     caron.start()
 
-    const payload = JSON.stringify({ foo: 'bar', '$attempts': 10, '$removeOnComplete': false })
+    const payload = JSON.stringify({ foo: 'bar', $attempts: 10, $removeOnComplete: false })
     redis.lpush('bull_test', payload)
   })
 
@@ -189,7 +189,7 @@ describe('bull params', () => {
 
     caron.start()
 
-    const payload = JSON.stringify({ foo: 'bar', '$removeOnComplete': false })
+    const payload = JSON.stringify({ foo: 'bar', $removeOnComplete: false })
     redis.lpush('bull_test', payload)
   })
 
@@ -211,7 +211,7 @@ describe('bull params', () => {
 
     caron.start()
 
-    const payload = JSON.stringify({ foo: 'bar', '$removeOnComplete': false })
+    const payload = JSON.stringify({ foo: 'bar', $removeOnComplete: false })
     redis.lpush('bull_test', payload)
   })
 })
