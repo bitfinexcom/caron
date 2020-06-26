@@ -192,51 +192,34 @@ describe('bull params', () => {
     const payload = JSON.stringify({ foo: 'bar', $removeOnComplete: false })
     redis.lpush('bull_test', payload)
   })
-
-  it('uses removeOnComplete from payload instead of default', (done) => {
-    const testQueue = new Queue('default')
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.removeOnComplete, false)
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $removeOnComplete: false })
-    redis.lpush('bull_test', payload)
-  })
 })
 
-describe('100k items', () => {
-  it('process 100k items', (done) => {
+describe('10k items', () => {
+  it('process 10k items in less than 10 secs', (done) => {
     const testQueue = new Queue('default')
+    let now = new Date()
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.data.foo, 'bar')
 
       cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
+      if (job.data.test === 9999) {
+        testQueue.close().then(() => {
+            caron.stop(() => {
+              const finished = new Date()
+              assert.strictEqual(finished.getTime() - now.getTime() < 10 * 1000, true)
+              caron.redis.disconnect()
+              done()
+            })
         })
-      })
+      }
     })
 
     caron.start()
 
-    for (let i = 0; i < 100000; i++) {
+    for (let i = 0; i < 10000; i++) {
       const payload = JSON.stringify({ test: i, foo: 'bar', queue: 'default' })
       redis.lpush('bull_test', payload)
     }
-  }).timeout(5000)
+  }).timeout(10000)
 })
