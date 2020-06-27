@@ -211,7 +211,7 @@ class Caron {
         'cmsg["$removeOnComplete"] = nil',
         'local jobIdKey = "bull:" .. jqueue .. ":" .. jobId',
         'if redis.call("EXISTS", jobIdKey) == 0 then',
-        '  redis.call("HMSET", jobIdKey, "data", cjson.encode(cmsg), "opts", cjson.encode(jopts), "progress", 0, "timestamp", ARGV[2],  "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
+        '  redis.call("HMSET", jobIdKey, "data", cjson.encode(cmsg), "opts", cjson.encode(jopts), "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")',
         '  if jdelay > 0 then',
         '    local timestamp = (tonumber(ARGV[2]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)',
         '    redis.call("ZADD", "bull:" .. jqueue .. ":delayed", timestamp, jobId)',
