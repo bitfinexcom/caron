@@ -83,7 +83,7 @@ const program = require('yargs')
 console.log('caron(' + program.redis + '/' + program.list + '/' + program.type + ')')
 
 if (program.redis_sentinels) {
-  const redis_name =  program.redis
+  const redis_name = program.redis
 
   program.redis = {
     name: redis_name,

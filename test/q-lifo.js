@@ -49,15 +49,15 @@ describe('q lifo', () => {
     const list = await redis.lrange('bull_test_l', 0, 99)
     assert.deepEqual(
       list,
-      [ '{"num":1,"queue":"default_r"}',
+      ['{"num":1,"queue":"default_r"}',
         '{"num":2,"queue":"default_r"}',
         '{"num":3,"queue":"default_r"}',
-        '{"num":4,"queue":"default_r"}' ]
+        '{"num":4,"queue":"default_r"}']
     )
 
     caron.start()
 
-    const expectedOrder = [ 1, 2, 3, 4 ]
+    const expectedOrder = [1, 2, 3, 4]
     return new Promise((resolve) => {
       testQueue.process((job, cb) => {
         const expected = expectedOrder.shift()
@@ -104,13 +104,13 @@ describe('q lifo', () => {
     const list = await redis.lrange('bull_test_r', 0, 99)
     assert.deepEqual(
       list,
-      [ '{"num":3,"queue":"default_l"}',
+      ['{"num":3,"queue":"default_l"}',
         '{"num":2,"queue":"default_l"}',
-        '{"num":1,"queue":"default_l"}' ]
+        '{"num":1,"queue":"default_l"}']
     )
 
     caron.start()
-    const expectedOrder = [ 1, 2, 3 ]
+    const expectedOrder = [1, 2, 3]
     return new Promise((resolve) => {
       testQueue.process((job, cb) => {
         const expected = expectedOrder.shift()

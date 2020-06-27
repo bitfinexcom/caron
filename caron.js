@@ -94,7 +94,7 @@ class Caron {
         }
 
         if (debug.enabled) {
-          let elapsed = elapsedTime(startTs)
+          const elapsed = elapsedTime(startTs)
           debug(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
         }
 
@@ -207,7 +207,7 @@ class Caron {
         'if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end',
         'local jopt0 = cmsg["$removeOnComplete"]',
         'if (type(jopt0) ~= "boolean") then jopt0 = true end',
-        'local jopts = { removeOnComplete = jopt0 }',
+        'local jopts = { removeOnComplete = jopt0, attempts = jattempts, delay = jdelay }',
         'cmsg["$removeOnComplete"] = nil',
         'local jobIdKey = "bull:" .. jqueue .. ":" .. jobId',
         'if redis.call("EXISTS", jobIdKey) == 0 then',
