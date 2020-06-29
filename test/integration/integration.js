@@ -17,7 +17,7 @@ let caron
 beforeEach(() => {
   caron = new Caron({
     type: 'bull',
-    list: 'bull_test',
+    list: defList,
     redis: 'redis://127.0.0.1:6379',
     freq: 25,
     batch: 100,
@@ -56,7 +56,7 @@ describe('integration', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', queue: 'default' })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 })
 
@@ -80,7 +80,7 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', $queue: 'default-test' })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 
   it('uses jobId from payload instead of default', (done) => {
@@ -102,7 +102,7 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', $jobId: 'firstJob' })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 
   it('uses delay from payload instead of default', (done) => {
@@ -124,7 +124,7 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', $delay: 1000 })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
     setTimeout(() => {
       redis.exists('bull:default:delayed').then((res) => {
         assert.strictEqual(res, 1)
@@ -151,7 +151,7 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', $attempts: 10, $removeOnComplete: false })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 
   it('uses attempts from config', (done) => {
@@ -173,7 +173,7 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar' })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 
   it('uses removeOnComplete from payload instead of default', (done) => {
@@ -195,7 +195,7 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', $removeOnComplete: false })
-    redis.lpush('bull_test', payload)
+    redis.lpush(defList, payload)
   })
 })
 
@@ -224,7 +224,7 @@ describe('10k items', () => {
 
     for (let i = 0; i < 10000; i++) {
       const payload = JSON.stringify({ test: i, foo: 'bar', queue: 'default' })
-      redis.lpush('bull_test', payload)
+      redis.lpush(defList, payload)
     }
   }).timeout(10000)
 })

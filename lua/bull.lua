@@ -27,7 +27,7 @@ while ((redis.call("LLEN", "PROGRAM_LIST") ~= 0) and (cnt < PROGRAM_BATCH)) do
   if (type(jdelay) ~= "number") or (jdelay < 0) then jdelay = 0 end
   local jopt0 = cmsg["$removeOnComplete"]
   if (type(jopt0) ~= "boolean") then jopt0 = true end
-  local jopts = { removeOnComplete = jopt0 }
+  local jopts = { removeOnComplete = jopt0, delay = jdelay, attempts = jattempts }
   cmsg["$removeOnComplete"] = nil
   local jobIdKey = "bull:" .. jqueue .. ":" .. jobId
   if redis.call("EXISTS", jobIdKey) == 0 then
