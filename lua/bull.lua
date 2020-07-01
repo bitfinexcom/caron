@@ -1,10 +1,13 @@
 local cnt = 0
 local err = 0
-while ((redis.call("LLEN", "PROGRAM_LIST") ~= 0) and (cnt < PROGRAM_BATCH)) do
+local len = redis.call("LLEN", "PROGRAM_LIST")
+while ((len ~= 0) and (cnt < PROGRAM_BATCH)) do
   local msg = redis.call("RPOP", "PROGRAM_LIST")
   if not msg then break end
+  len = len - 1
+
   local valid_json, cmsg = pcall(cjson.decode, msg)
-  if not valid_json or not cmsg or type(cmsg) ~= "table" then
+  if not cmsg or type(cmsg) ~= "table" then
     err = -2
     break
   end
@@ -16,6 +19,11 @@ while ((redis.call("LLEN", "PROGRAM_LIST") ~= 0) and (cnt < PROGRAM_BATCH)) do
 
   local pushCmd = "PROGRAM_Q_LIFO" .. "PUSH"
   local jobId = redis.call("INCR", "bull:" .. jqueue .. ":id")
+  local jobIdKey = "bull:" .. jqueue .. ":" .. jobId
+
+  if redis.call("EXISTS", jobIdKey) == 1 then
+    return {err, cnt}
+  end
   local jattempts = cmsg["$attempts"]
   local jdelay = cmsg["$delay"]
   local jobCustomId = cmsg["$jobId"]
@@ -29,21 +37,19 @@ while ((redis.call("LLEN", "PROGRAM_LIST") ~= 0) and (cnt < PROGRAM_BATCH)) do
   if (type(jopt0) ~= "boolean") then jopt0 = true end
   local jopts = { removeOnComplete = jopt0, delay = jdelay, attempts = jattempts }
   cmsg["$removeOnComplete"] = nil
-  local jobIdKey = "bull:" .. jqueue .. ":" .. jobId
-  if redis.call("EXISTS", jobIdKey) == 0 then
-    redis.call("HMSET", jobIdKey, "data", cjson.encode(cmsg), "opts", cjson.encode(jopts), "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attempts", jattempts, "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")
-    if jdelay > 0 then
-      local timestamp = (tonumber(ARGV[2]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)
-      redis.call("ZADD", "bull:" .. jqueue .. ":delayed", timestamp, jobId)
-      redis.call("PUBLISH", "bull:" .. jqueue .. ":delayed", (timestamp / 0x1000))
+
+  redis.call("HSET", jobIdKey, "data", cjson.encode(cmsg), "opts", cjson.encode(jopts), "progress", 0, "delay", jdelay, "timestamp", ARGV[2], "attemptsMade", 0, "stacktrace", "[]", "returnvalue", "null")
+  if jdelay > 0 then
+    local timestamp = (tonumber(ARGV[2]) + jdelay) * 0x1000 + bit.band(jobId, 0xfff)
+    redis.call("ZADD", "bull:" .. jqueue .. ":delayed", timestamp, jobId)
+    redis.call("PUBLISH", "bull:" .. jqueue .. ":delayed", (timestamp / 0x1000))
+  else
+    if redis.call("EXISTS", "bull:" .. jqueue .. ":meta-paused") ~= 1 then
+      redis.call(pushCmd, "bull:" .. jqueue .. ":wait", jobId)
     else
-      if redis.call("EXISTS", "bull:" .. jqueue .. ":meta-paused") ~= 1 then
-        redis.call(pushCmd, "bull:" .. jqueue .. ":wait", jobId)
-      else
-        redis.call(pushCmd, "bull:" .. jqueue .. ":paused", jobId)
-      end
-      redis.call("PUBLISH", "bull:" .. jqueue .. ":waiting@null", jobId)
+      redis.call(pushCmd, "bull:" .. jqueue .. ":paused", jobId)
     end
+    redis.call("PUBLISH", "bull:" .. jqueue .. ":waiting@null", jobId)
   end
 end
 return {err, cnt}

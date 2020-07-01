@@ -14,9 +14,13 @@ end
 
 local cnt = 0
 local err = 0
-while ((redis.call("LLEN", "PROGRAM_LIST") ~= 0) and (cnt < PROGRAM_BATCH)) do
+local len = redis.call("LLEN", "PROGRAM_LIST")
+
+while ((len ~= 0) and (cnt < PROGRAM_BATCH)) do
   local msg = redis.call("RPOP", "PROGRAM_LIST")
   if not msg then break end
+  len = len - 1
+
   local valid_json, cmsg = pcall(cjson.decode, msg)
   if not valid_json or not cmsg or type(cmsg) ~= "table" then
     err = -2
