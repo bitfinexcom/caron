@@ -1,6 +1,6 @@
 {
   "name": "caron",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Atomic job enqueuer from Redis lists to popular Job Queues (Sidekiq, Bull, ...)",
   "author": {
     "name": "prdn",
@@ -10,6 +10,7 @@
     "bitfinex"
   ],
   "dependencies": {
+    "bull": "^3.14.0",
     "debug": "^3.1.0",
     "ioredis": "^4.14.2",
     "lodash": "^4.17.11",
@@ -24,6 +25,7 @@
   },
   "scripts": {
     "test": "npm run lint && npm run unit",
+    "test:integration": "mocha test/integration",
     "lint": "standard",
     "unit": "mocha"
   },
@@ -33,7 +35,9 @@
     "url": "git+https://github.com/bitfinexcom/caron.git"
   },
   "devDependencies": {
+    "ioredis-mock": "^4.21.1",
     "mocha": "^5.0.1",
+    "proxyquire": "^2.1.3",
     "standard": "^12.0.1"
   }
 }
