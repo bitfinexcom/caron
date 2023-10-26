@@ -59,7 +59,7 @@ DEBUG=caron:* caron -t bull -l bull_test
 redis-cli > lpush "sidekiq_jobs" "{\"$queue\":\"critical\",\"$class\":\"BackendJob\",\"foo\":\"bar\",\"my\":\"stuff\",\"other\":\"stuff\",\"other\":{\"f\":5}}"
 
 // Bull job enqueue
-redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"foo\":\"bar\",\"my\":\"stuff\",\"other\":{\"f\":5}}"
+redis-cli > lpush "bull_jobs" "{\"$queue\":\"critical\",\"$attempts\":4,\"$backoff\":\"exponential\", \"foo\":\"bar\",\"my\":\"stuff\",\"other\":{\"f\":5}}"
 ```
 
 ##### Push from Node.js
@@ -72,7 +72,7 @@ const Redis = require('ioredis')
 var redis = new Redis()
 
 redis.lpush('sidekiq_test', JSON.stringify({ foo: 'bar', '$queue': 'critical', '$class': 'MyCriticalJob', other: { a: 1, b: 2 } }))
-redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'priority', '$attempts': 5, other: { a: 1, b: 2 } }))
+redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'priority', '$attempts': 5, '$backoff': 'exponential',  other: { a: 1, b: 2 } }))
 redis.lpush('bull_test', JSON.stringify({ foo: 'bar', '$queue': 'lazy', '$attempts': 1, '$delay': 5000, other: { a: 1, b: 2 } }))
 ```
 
@@ -85,6 +85,7 @@ require 'json'
 rcli = Redis.new
 
 rcli.lpush('sidekiq_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'critical', '$class' => 'MyCriticalJob', 'other' => { 'a' => 1, 'b' => 2 } }))
-rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'priority', '$attempts' => 5, 'other' => { 'a' => 1, 'b' => 2 } }))
+rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'priority', '$attempts' => 5, '$backoff' => 'exponential', 'other' => { 'a' => 1, 'b' => 2 } }))
+rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 ```

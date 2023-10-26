@@ -171,6 +171,54 @@ describe('bull params', () => {
     redis.lpush('bull_test', payload)
   })
 
+  it.only('uses fixed backoff method with given delay', (done) => {
+    const testQueue = new Queue('default')
+    const backoff = 'fixed'
+    const delay = Math.floor(Math.random()*1000)
+    testQueue.process((job, cb) => {
+      assert.strictEqual(job.opts.backoff.type, backoff)
+      assert.strictEqual(job.opts.backoff.delay, delay)
+      assert.strictEqual(job.data.foo, 'bar')
+
+      cb(null)
+      testQueue.close().then(() => {
+        caron.stop(() => {
+          caron.redis.disconnect()
+          done()
+        })
+      })
+    })
+
+    caron.start()
+
+    const payload = JSON.stringify({ foo: 'bar', $backoff: backoff, $delay: delay })
+    redis.lpush('bull_test', payload)
+  })
+
+  it.only('uses exponential backoff method with given delay', (done) => {
+    const testQueue = new Queue('default')
+    const backoff = 'exponential'
+    const delay = Math.floor(Math.random()*1000)
+    testQueue.process((job, cb) => {
+      assert.strictEqual(job.opts.backoff.type, backoff)
+      assert.strictEqual(job.opts.backoff.delay, delay)
+      assert.strictEqual(job.data.foo, 'bar')
+
+      cb(null)
+      testQueue.close().then(() => {
+        caron.stop(() => {
+          caron.redis.disconnect()
+          done()
+        })
+      })
+    })
+
+    caron.start()
+
+    const payload = JSON.stringify({ foo: 'bar', $backoff: backoff, $delay: delay })
+    redis.lpush('bull_test', payload)
+  })
+
   it('uses removeOnComplete from payload instead of default', (done) => {
     const testQueue = new Queue('default')
 
