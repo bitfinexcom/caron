@@ -171,7 +171,7 @@ describe('bull params', () => {
     redis.lpush('bull_test', payload)
   })
 
-  it.only('uses fixed backoff method with given delay', (done) => {
+  it('uses fixed backoff method with given delay', (done) => {
     const testQueue = new Queue('default')
     const backoff = 'fixed'
     const delay = Math.floor(Math.random()*1000)
@@ -195,7 +195,7 @@ describe('bull params', () => {
     redis.lpush('bull_test', payload)
   })
 
-  it.only('uses exponential backoff method with given delay', (done) => {
+  it('uses exponential backoff method with given delay', (done) => {
     const testQueue = new Queue('default')
     const backoff = 'exponential'
     const delay = Math.floor(Math.random()*1000)
