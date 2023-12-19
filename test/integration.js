@@ -174,7 +174,7 @@ describe('bull params', () => {
   it('uses fixed backoff method with given delay', (done) => {
     const testQueue = new Queue('default')
     const backoff = 'fixed'
-    const delay = Math.floor(Math.random()*1000)
+    const delay = Math.floor(Math.random() * 1000)
     testQueue.process((job, cb) => {
       assert.strictEqual(job.opts.backoff.type, backoff)
       assert.strictEqual(job.opts.backoff.delay, delay)
@@ -198,7 +198,7 @@ describe('bull params', () => {
   it('uses exponential backoff method with given delay', (done) => {
     const testQueue = new Queue('default')
     const backoff = 'exponential'
-    const delay = Math.floor(Math.random()*1000)
+    const delay = Math.floor(Math.random() * 1000)
     testQueue.process((job, cb) => {
       assert.strictEqual(job.opts.backoff.type, backoff)
       assert.strictEqual(job.opts.backoff.delay, delay)
