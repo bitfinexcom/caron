@@ -47,7 +47,7 @@ describe('q lifo', () => {
     redis.rpush('bull_test_l', payload4)
 
     const list = await redis.lrange('bull_test_l', 0, 99)
-    assert.deepEqual(
+    assert.strict.deepEqual(
       list,
       ['{"num":1,"queue":"default_r"}',
         '{"num":2,"queue":"default_r"}',
@@ -61,7 +61,7 @@ describe('q lifo', () => {
     return new Promise((resolve) => {
       testQueue.process((job, cb) => {
         const expected = expectedOrder.shift()
-        assert.equal(job.data.num, expected)
+        assert.strict.equal(job.data.num, expected)
         cb(null)
 
         if (expectedOrder.length !== 0) return
@@ -102,7 +102,7 @@ describe('q lifo', () => {
     redis.lpush('bull_test_r', payload3)
 
     const list = await redis.lrange('bull_test_r', 0, 99)
-    assert.deepEqual(
+    assert.strict.deepEqual(
       list,
       ['{"num":3,"queue":"default_l"}',
         '{"num":2,"queue":"default_l"}',
@@ -114,7 +114,7 @@ describe('q lifo', () => {
     return new Promise((resolve) => {
       testQueue.process((job, cb) => {
         const expected = expectedOrder.shift()
-        assert.equal(job.data.num, expected)
+        assert.strict.equal(job.data.num, expected)
 
         cb(null)
 
