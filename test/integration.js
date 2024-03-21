@@ -196,6 +196,38 @@ describe('bull params', () => {
     redis.lpush('bull_test', payload)
   })
 
+  it('uses fixed backoff for failing task', (done) => {
+    const testQueue = new Queue('default')
+    const type = 'fixed'
+    const delay = 300
+    const attempts = 5
+    let currentAttempt = 0
+
+    testQueue.process((job, cb) => {
+      assert((Date.now() - start) >= (delay * currentAttempt))
+
+      cb(new Error())
+
+      currentAttempt++
+      if (currentAttempt === attempts) {
+        setImmediate(() => {
+          testQueue.close().then(() => {
+            caron.stop(() => {
+              caron.redis.disconnect()
+              done()
+            })
+          })
+        })
+      }
+    })
+
+    caron.start()
+
+    const payload = JSON.stringify({ foo: 'bar', $attempts: attempts, $backoff: { type, delay } })
+    const start = Date.now()
+    redis.lpush('bull_test', payload)
+  })
+
   it('uses exponential backoff method with given delay', (done) => {
     const testQueue = new Queue('default')
     const type = 'exponential'
@@ -218,6 +250,38 @@ describe('bull params', () => {
     caron.start()
 
     const payload = JSON.stringify({ foo: 'bar', $backoff: { type, delay } })
+    redis.lpush('bull_test', payload)
+  })
+
+  it('uses exponential backoff for failing task', (done) => {
+    const testQueue = new Queue('default')
+    const type = 'exponential'
+    const delay = 300
+    const attempts = 3
+    let currentAttempt = 0
+
+    testQueue.process((job, cb) => {
+      assert((Date.now() - start) >= (2 ^ currentAttempt * delay))
+
+      cb(new Error())
+
+      currentAttempt++
+      if (currentAttempt === attempts) {
+        setImmediate(() => {
+          testQueue.close().then(() => {
+            caron.stop(() => {
+              caron.redis.disconnect()
+              done()
+            })
+          })
+        })
+      }
+    })
+
+    caron.start()
+
+    const payload = JSON.stringify({ foo: 'bar', $attempts: attempts, $backoff: { type, delay } })
+    const start = Date.now()
     redis.lpush('bull_test', payload)
   })
 
