@@ -253,7 +253,7 @@ describe('bull params', () => {
     redis.lpush('bull_test', payload)
   })
 
-  it('uses fixed backoff for failing task', (done) => {
+  it('uses exponential backoff for failing task', (done) => {
     const testQueue = new Queue('default')
     const type = 'exponential'
     const delay = 300
