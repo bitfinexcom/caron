@@ -2,7 +2,7 @@
 
 const Redis = require('ioredis')
 
-var redis = new Redis()
+const redis = new Redis()
 
 setInterval(() => {
   redis.lpush('bull_test', JSON.stringify({ foo: 'bar', queue: 'default' }))

@@ -6,6 +6,7 @@ const assert = require('assert')
 
 const Caron = require('../')
 const Redis = require('ioredis')
+const redisUrl = process.env.TEST_REDIS_URL || 'redis://127.0.0.1:6379'
 
 const Queue = require('bull')
 
@@ -13,19 +14,19 @@ let caron
 let redis
 describe('q lifo', () => {
   beforeEach(() => {
-    redis = new Redis()
+    redis = new Redis(redisUrl)
   })
   afterEach(() => {
     redis.disconnect()
   })
 
   it('enabled lifo', async () => {
-    const testQueue = new Queue('default_r')
+    const testQueue = new Queue('default_r', redisUrl)
 
     caron = new Caron({
       type: 'bull',
       list: 'bull_test_l',
-      redis: 'redis://127.0.0.1:6379',
+      redis: redisUrl,
       freq: 25,
       batch: 100,
       q_prefix: '',
@@ -77,12 +78,12 @@ describe('q lifo', () => {
   })
 
   it('disabled lifo', async () => {
-    const testQueue = new Queue('default_l')
+    const testQueue = new Queue('default_l', redisUrl)
 
     caron = new Caron({
       type: 'bull',
       list: 'bull_test_r',
-      redis: 'redis://127.0.0.1:6379',
+      redis: redisUrl,
       freq: 25,
       batch: 100,
       q_prefix: '',

@@ -89,3 +89,7 @@ rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'priority', '$at
 rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 ```
+
+## Node and package manager
+
+Use Node 22 and npm 12.2.1. Install with `npm ci --ignore-scripts` and run `npm test`. Set `TEST_REDIS_URL` to use a dedicated test Redis instance.

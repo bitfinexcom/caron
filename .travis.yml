@@ -2,10 +2,13 @@ sudo: false
 
 language: node_js
 node_js:
-  - "8"
+  - "22"
+
+before_install:
+  - npm install --global npm@12.2.1 --ignore-scripts
 
 install:
-  - npm install
+  - npm ci --ignore-scripts
 
 services:
   - redis-server

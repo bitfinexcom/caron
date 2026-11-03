@@ -6,10 +6,11 @@ const assert = require('assert')
 
 const Caron = require('../')
 const Redis = require('ioredis')
-const redis = new Redis()
+const redisUrl = process.env.TEST_REDIS_URL || 'redis://127.0.0.1:6379'
+const redis = new Redis(redisUrl)
 
 const Queue = require('bull')
-const testQueue = new Queue('default')
+const testQueue = new Queue('default', redisUrl)
 
 let caron
 
@@ -17,7 +18,7 @@ beforeEach(() => {
   caron = new Caron({
     type: 'bull',
     list: 'bull_test',
-    redis: 'redis://127.0.0.1:6379',
+    redis: redisUrl,
     freq: 25,
     batch: 100,
     q_prefix: '',
@@ -57,7 +58,7 @@ describe('integration', () => {
 
 describe('bull params', () => {
   it('uses queue from payload instead of def_queue', (done) => {
-    const testQueue = new Queue('default-test')
+    const testQueue = new Queue('default-test', redisUrl)
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.data.foo, 'bar')
@@ -79,7 +80,7 @@ describe('bull params', () => {
   })
 
   it('uses jobId from payload instead of default', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.id, 'firstJob')
@@ -101,7 +102,7 @@ describe('bull params', () => {
   })
 
   it('uses delay from payload instead of default', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.opts.delay, 1000)
@@ -128,7 +129,7 @@ describe('bull params', () => {
   })
 
   it('uses attempts from payload instead of default', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.opts.attempts, 10)
@@ -150,7 +151,7 @@ describe('bull params', () => {
   })
 
   it('uses attempts from config', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.opts.attempts, 5)
@@ -172,7 +173,7 @@ describe('bull params', () => {
   })
 
   it('uses fixed backoff method with given delay', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
     const type = 'fixed'
     const delay = Math.floor(Math.random() * 1000)
     testQueue.process((job, cb) => {
@@ -197,7 +198,7 @@ describe('bull params', () => {
   })
 
   it('uses fixed backoff for failing task', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
     const type = 'fixed'
     const delay = 300
     const attempts = 5
@@ -229,7 +230,7 @@ describe('bull params', () => {
   })
 
   it('uses exponential backoff method with given delay', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
     const type = 'exponential'
     const delay = Math.floor(Math.random() * 1000)
     testQueue.process((job, cb) => {
@@ -254,7 +255,7 @@ describe('bull params', () => {
   })
 
   it('uses exponential backoff for failing task', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
     const type = 'exponential'
     const delay = 300
     const attempts = 3
@@ -286,7 +287,7 @@ describe('bull params', () => {
   })
 
   it('uses removeOnComplete from payload instead of default', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
 
     testQueue.process((job, cb) => {
       assert.strictEqual(job.opts.removeOnComplete, false)
@@ -310,7 +311,7 @@ describe('bull params', () => {
 
 describe('10k items', () => {
   it('process 10k items in less than 10 secs', (done) => {
-    const testQueue = new Queue('default')
+    const testQueue = new Queue('default', redisUrl)
     const now = new Date()
 
     testQueue.process((job, cb) => {
