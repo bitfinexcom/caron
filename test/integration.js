@@ -1,340 +1,141 @@
-/* eslint-env mocha */
-
 'use strict'
 
-const assert = require('assert')
+const test = require('./helpers/test')
+const assert = require('node:assert/strict')
+const { setTimeout: delay } = require('node:timers/promises')
+const fixture = require('./helpers/fixture')
+const { processJobs } = fixture
 
-const Caron = require('../')
-const Redis = require('ioredis')
-const redisUrl = process.env.TEST_REDIS_URL || 'redis://127.0.0.1:6379'
-const redis = new Redis(redisUrl)
-
-const Queue = require('bull')
-const testQueue = new Queue('default', redisUrl)
-
-let caron
-
-beforeEach(() => {
-  caron = new Caron({
-    type: 'bull',
-    list: 'bull_test',
-    redis: redisUrl,
-    freq: 25,
-    batch: 100,
-    q_prefix: '',
-    q_lifo: false,
-    def_queue: 'default',
-    def_worker: 'BaseJob',
-    def_attempts: 5,
-    exit: false,
-    debug: false
+test('integration: pulls stuff from redis', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const finished = processJobs(f.queue(), (job) => {
+    assert.equal(job.data.foo, 'bar')
   })
+  f.caron.start()
+  await Promise.all([finished, f.push({ foo: 'bar', queue: f.queueName })])
+  t.pass('processed the payload')
 })
 
-after(() => {
-  redis.disconnect()
+test('bull params: uses queue from payload instead of def_queue', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const name = `${f.queueName}-override`
+  const finished = processJobs(f.queue(name), (job) => {
+    assert.equal(job.data.foo, 'bar')
+    assert.equal(job.queue.name, name)
+  })
+  f.caron.start()
+  await Promise.all([finished, f.push({ foo: 'bar', $queue: name })])
+  t.pass('used the payload queue')
 })
 
-describe('integration', () => {
-  it('pulls stuff from redis', (done) => {
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', queue: 'default' })
-    redis.lpush('bull_test', payload)
+test('bull params: uses jobId from payload instead of default', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const finished = processJobs(f.queue(), (job) => {
+    assert.equal(job.id, 'firstJob')
+    assert.equal(job.data.foo, 'bar')
   })
+  f.caron.start()
+  await Promise.all([finished, f.push({ foo: 'bar', $jobId: 'firstJob' })])
+  t.pass('used the payload job ID')
 })
 
-describe('bull params', () => {
-  it('uses queue from payload instead of def_queue', (done) => {
-    const testQueue = new Queue('default-test', redisUrl)
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.data.foo, 'bar')
-      assert.strictEqual(job.queue.name, 'default-test')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $queue: 'default-test' })
-    redis.lpush('bull_test', payload)
+test('bull params: uses delay from payload instead of default', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const queue = f.queue()
+  const finished = processJobs(queue, (job) => {
+    assert.equal(job.opts.delay, 1000)
+    assert.equal(job.data.foo, 'bar')
   })
-
-  it('uses jobId from payload instead of default', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.id, 'firstJob')
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
+  const controller = new AbortController()
+  t.teardown(() => controller.abort(), { force: true })
+  f.caron.start()
+  await Promise.all([
+    finished,
+    f.push({ foo: 'bar', $delay: 1000 }),
+    delay(500, undefined, { signal: controller.signal }).then(async () => {
+      assert.equal(await f.redis.exists(queue.toKey('delayed')), 1)
     })
+  ])
+  t.pass('observed the delayed job before processing')
+})
 
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $jobId: 'firstJob' })
-    redis.lpush('bull_test', payload)
+test('bull params: uses attempts from payload instead of default', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const finished = processJobs(f.queue(), (job) => {
+    assert.equal(job.opts.attempts, 10)
+    assert.equal(job.data.foo, 'bar')
   })
+  f.caron.start()
+  await Promise.all([finished, f.push({ foo: 'bar', $attempts: 10, $removeOnComplete: false })])
+  t.pass('used the payload attempt count')
+})
 
-  it('uses delay from payload instead of default', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.delay, 1000)
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $delay: 1000 })
-    redis.lpush('bull_test', payload)
-    setTimeout(() => {
-      redis.exists('bull:default:delayed').then((res) => {
-        assert.strictEqual(res, 1)
-      })
-    }, 500)
+test('bull params: uses attempts from config', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const finished = processJobs(f.queue(), (job) => {
+    assert.equal(job.opts.attempts, 5)
+    assert.equal(job.data.foo, 'bar')
   })
+  f.caron.start()
+  await Promise.all([finished, f.push({ foo: 'bar' })])
+  t.pass('used the configured attempt count')
+})
 
-  it('uses attempts from payload instead of default', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.attempts, 10)
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $attempts: 10, $removeOnComplete: false })
-    redis.lpush('bull_test', payload)
-  })
-
-  it('uses attempts from config', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.attempts, 5)
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar' })
-    redis.lpush('bull_test', payload)
-  })
-
-  it('uses fixed backoff method with given delay', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-    const type = 'fixed'
-    const delay = Math.floor(Math.random() * 1000)
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.backoff.type, type)
-      assert.strictEqual(job.opts.backoff.delay, delay)
-      assert.strictEqual(job.data.foo, 'bar')
-      assert.strictEqual(job.data.$backoff, undefined)
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $backoff: { type, delay } })
-    redis.lpush('bull_test', payload)
-  })
-
-  it('uses fixed backoff for failing task', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-    const type = 'fixed'
+for (const type of ['fixed', 'exponential']) {
+  test(`bull params: uses ${type} backoff method with given delay`, { timeout: 2000 }, async (t) => {
+    const f = fixture(t)
     const delay = 300
-    const attempts = 5
-    let currentAttempt = 0
-
-    testQueue.process((job, cb) => {
-      assert((Date.now() - start) >= (delay * currentAttempt))
-
-      cb(new Error())
-
-      currentAttempt++
-      if (currentAttempt === attempts) {
-        setImmediate(() => {
-          testQueue.close().then(() => {
-            caron.stop(() => {
-              caron.redis.disconnect()
-              done()
-            })
-          })
-        })
-      }
+    const finished = processJobs(f.queue(), (job) => {
+      assert.equal(job.opts.backoff.type, type)
+      assert.equal(job.opts.backoff.delay, delay)
+      assert.equal(job.data.foo, 'bar')
+      assert.equal(job.data.$backoff, undefined)
     })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $attempts: attempts, $backoff: { type, delay } })
-    const start = Date.now()
-    redis.lpush('bull_test', payload)
+    f.caron.start()
+    await Promise.all([finished, f.push({ foo: 'bar', $backoff: { type, delay } })])
+    t.pass('preserved backoff options and removed metadata from the payload')
   })
 
-  it('uses exponential backoff method with given delay', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-    const type = 'exponential'
-    const delay = Math.floor(Math.random() * 1000)
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.backoff.type, type)
-      assert.strictEqual(job.opts.backoff.delay, delay)
-      assert.strictEqual(job.data.foo, 'bar')
-      assert.strictEqual(job.data.$backoff, undefined)
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $backoff: { type, delay } })
-    redis.lpush('bull_test', payload)
-  })
-
-  it('uses exponential backoff for failing task', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-    const type = 'exponential'
+  test(`bull params: uses ${type} backoff for failing task`, { timeout: 2000 }, async (t) => {
+    const f = fixture(t)
     const delay = 300
-    const attempts = 3
+    const attempts = type === 'fixed' ? 5 : 3
     let currentAttempt = 0
-
-    testQueue.process((job, cb) => {
-      assert((Date.now() - start) >= (2 ^ currentAttempt * delay))
-
-      cb(new Error())
-
-      currentAttempt++
-      if (currentAttempt === attempts) {
-        setImmediate(() => {
-          testQueue.close().then(() => {
-            caron.stop(() => {
-              caron.redis.disconnect()
-              done()
-            })
-          })
-        })
-      }
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $attempts: attempts, $backoff: { type, delay } })
+    let minimumElapsed = 0
     const start = Date.now()
-    redis.lpush('bull_test', payload)
+    const finished = processJobs(f.queue(), () => {
+      assert.ok(Date.now() - start >= minimumElapsed)
+      currentAttempt++
+      minimumElapsed += type === 'fixed' ? delay : (2 ** currentAttempt - 1) * delay
+    }, attempts, new Error('expected job failure'))
+    f.caron.start()
+    await Promise.all([finished, f.push({ foo: 'bar', $attempts: attempts, $backoff: { type, delay } })])
+    t.is(currentAttempt, attempts, 'processed every retry')
   })
+}
 
-  it('uses removeOnComplete from payload instead of default', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.opts.removeOnComplete, false)
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      testQueue.close().then(() => {
-        caron.stop(() => {
-          caron.redis.disconnect()
-          done()
-        })
-      })
-    })
-
-    caron.start()
-
-    const payload = JSON.stringify({ foo: 'bar', $removeOnComplete: false })
-    redis.lpush('bull_test', payload)
+test('bull params: uses removeOnComplete from payload instead of default', { timeout: 2000 }, async (t) => {
+  const f = fixture(t)
+  const finished = processJobs(f.queue(), (job) => {
+    assert.equal(job.opts.removeOnComplete, false)
+    assert.equal(job.data.foo, 'bar')
   })
+  f.caron.start()
+  await Promise.all([finished, f.push({ foo: 'bar', $removeOnComplete: false })])
+  t.pass('used the payload completion option')
 })
 
-describe('10k items', () => {
-  it('process 10k items in less than 10 secs', (done) => {
-    const testQueue = new Queue('default', redisUrl)
-    const now = new Date()
-
-    testQueue.process((job, cb) => {
-      assert.strictEqual(job.data.foo, 'bar')
-
-      cb(null)
-      if (job.data.test === 9999) {
-        testQueue.close().then(() => {
-          caron.stop(() => {
-            const finished = new Date()
-            assert.strictEqual(finished.getTime() - now.getTime() < 10 * 1000, true)
-            caron.redis.disconnect()
-            done()
-          })
-        })
-      }
-    })
-
-    caron.start()
-
-    for (let i = 0; i < 10000; i++) {
-      const payload = JSON.stringify({ test: i, foo: 'bar', queue: 'default' })
-      redis.lpush('bull_test', payload)
-    }
-  }).timeout(10000)
+test('10k items: process 10k items in less than 10 secs', { timeout: 10000 }, async (t) => {
+  const f = fixture(t)
+  const start = Date.now()
+  const finished = processJobs(f.queue(), (job) => {
+    assert.equal(job.data.foo, 'bar')
+  }, 10000)
+  f.caron.start()
+  const pushes = []
+  for (let i = 0; i < 10000; i++) {
+    pushes.push(f.push({ test: i, foo: 'bar', queue: f.queueName }))
+  }
+  await Promise.all([finished, ...pushes])
+  t.ok(Date.now() - start < 10000, 'processed all 10000 jobs within 10 seconds')
 })

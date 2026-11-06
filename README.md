@@ -93,3 +93,6 @@ rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attemp
 ## Node and package manager
 
 Use Node 22 and npm 12.2.1. Install with `npm ci` and run `npm test`. Set `TEST_REDIS_URL` to use a dedicated test Redis instance.
+
+Tests use Brittle on Node.js and require Redis. Run the suite with `npm test`
+(lint and tests), or run one file with `npx brittle-node test/q-lifo.js`.
