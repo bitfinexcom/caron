@@ -1,6 +1,6 @@
 {
   "name": "caron",
-  "version": "0.3.0",
+  "version": "1.3.0",
   "description": "Atomic job enqueuer from Redis lists to popular Job Queues (Sidekiq, Bull, ...)",
   "author": {
     "name": "prdn",
