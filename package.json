@@ -30,9 +30,9 @@
     "url": "git+https://github.com/bitfinexcom/caron.git"
   },
   "devDependencies": {
-    "@bitfinex/lint-js": "1.1.0",
+    "@bitfinex/lint-js": "^1.1.0",
     "bull": "^3.29.3",
-    "brittle": "4.5.0"
+    "brittle": "^4.5.0"
   },
   "engines": {
     "node": ">=22.0"
