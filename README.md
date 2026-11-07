@@ -37,6 +37,7 @@ $ caron --help
     --def_worker <val>    default Job Queue worker - default: BaseJob
     --def_attempts <val>  default Bull Job attempts - default: 1
     --q_lifo              Bull LIFO mode
+    --debug               enable debug logging
 
 ```
 
@@ -44,10 +45,10 @@ $ caron --help
 caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq 25
 ```
 
-Debug mode:
+Enable Caron debug logging:
 
 ```
-DEBUG=caron:* caron -t bull -l bull_test
+caron -t bull -l bull_test --debug
 ```
 
 ### Examples

@@ -10,7 +10,6 @@
     "bitfinex"
   ],
   "dependencies": {
-    "debug": "^4.4.3",
     "ioredis": "^4.14.2",
     "yargs": "^17.7.2"
   },
@@ -37,7 +36,6 @@
   "engines": {
     "node": ">=22.0"
   },
-  "packageManager": "npm@12.2.1",
   "overrides": {
     "bull": {
       "uuid": "11.1.1"

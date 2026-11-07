@@ -1,7 +1,5 @@
 'use strict'
 
-const debug = require('debug')('caron:caron')
-
 const Redis = require('ioredis')
 
 const elapsedTime = (start) => {
@@ -10,13 +8,14 @@ const elapsedTime = (start) => {
 
 class Caron {
   constructor (opts) {
+    this.debug = opts.debug === true
     this.status = {
       active: true,
       processing: false,
       rseed: Date.now()
     }
 
-    debug('started')
+    this.log('started')
 
     this.ptype = opts.type
     this.freq = opts.freq
@@ -34,11 +33,11 @@ class Caron {
 
     this.status.active = false
 
-    debug('stopping...')
+    this.log('stopping...')
 
     this.stopInter = setInterval(() => {
       if (this.status.processing) return
-      debug('stopped')
+      this.log('stopped')
 
       clearInterval(this.stopInter)
       cb(null)
@@ -56,6 +55,10 @@ class Caron {
     process.exit()
   }
 
+  log (...args) {
+    if (this.debug) console.log(...args)
+  }
+
   work () {
     if (!this.status.active || this.status.processing) return
 
@@ -69,11 +72,7 @@ class Caron {
     }
 
     const args = []
-    let startTs = null
-
-    if (debug) {
-      startTs = process.hrtime()
-    }
+    const startTs = this.debug ? process.hrtime() : null
 
     args.push(
       this.ptype,
@@ -93,9 +92,9 @@ class Caron {
           return
         }
 
-        if (debug.enabled) {
+        if (this.debug) {
           const elapsed = elapsedTime(startTs)
-          debug(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
+          this.log(res[1] + ' jobs processed in ' + elapsed[0] + 's,' + Math.round(elapsed[1] / 1000) + 'µs')
         }
 
         setTimeout(() => {
@@ -125,7 +124,7 @@ class Caron {
       scripts.suffix
     ].join('\n')
 
-    debug(script)
+    this.log(script)
 
     this.redis.defineCommand('qwork', {
       lua: script,

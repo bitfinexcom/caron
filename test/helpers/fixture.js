@@ -24,7 +24,6 @@ module.exports = function fixture (t, opts = {}) {
     def_worker: 'BaseJob',
     def_attempts: 5,
     exit: false,
-    debug: false,
     ...opts
   })
 
