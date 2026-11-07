@@ -1,6 +1,6 @@
 'use strict'
 
-const { randomUUID } = require('node:crypto')
+const { randomUUID } = require('crypto')
 const Caron = require('../..')
 const Redis = require('ioredis')
 const Queue = require('bull')
