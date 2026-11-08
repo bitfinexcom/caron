@@ -59,22 +59,18 @@ module.exports = function fixture (t, opts = {}) {
 
 module.exports.processJobs = function processJobs (queue, handler, count = 1, expectedFailure) {
   return new Promise((resolve, reject) => {
-    let processed = 0
+    let remaining = count
     const event = expectedFailure ? 'failed' : 'completed'
     queue.on('error', reject)
     queue.on('failed', (job, err) => {
       if (err !== expectedFailure) reject(err)
     })
     queue.on(event, () => {
-      if (++processed === count) resolve()
+      remaining -= 1
+      if (remaining === 0) resolve()
     })
     queue.process(async (job) => {
-      try {
-        handler(job)
-      } catch (err) {
-        reject(err)
-        throw err
-      }
+      handler(job)
       if (expectedFailure) throw expectedFailure
     }).catch(reject)
   })
