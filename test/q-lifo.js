@@ -15,13 +15,19 @@ for (const lifo of [true, false]) {
       await f.push(payload, lifo ? 'rpush' : 'lpush')
     }
     const expectedList = payloads.map(payload => JSON.stringify(payload))
-    if (!lifo) expectedList.reverse()
+    if (!lifo) {
+      expectedList.reverse()
+    }
     t.alike(await f.redis.lrange(f.list, 0, 99), expectedList)
 
     const expectedOrder = [...numbers]
-    const finished = processJobs(queue, (job) => {
-      assert.equal(job.data.num, expectedOrder.shift())
-    }, numbers.length)
+    const finished = processJobs(
+      queue,
+      job => {
+        assert.equal(job.data.num, expectedOrder.shift())
+      },
+      numbers.length
+    )
     f.caron.start()
     await finished
     t.is(expectedOrder.length, 0, 'processed every job in order')
