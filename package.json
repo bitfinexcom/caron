@@ -20,7 +20,7 @@
   "scripts": {
     "test": "npm run lint && npm run unit",
     "lint": "bfx-lint-js .",
-    "unit": "brittle-node \"test/*.js\"",
+    "test:unit": "brittle-node \"test/*.js\"",
     "lint:fix": "bfx-lint-js . --fix"
   },
   "license": "MIT",
