@@ -10,7 +10,7 @@
     "bitfinex"
   ],
   "dependencies": {
-    "ioredis": "^4.14.2",
+    "ioredis": "^5.11.1",
     "yargs": "^17.7.2"
   },
   "main": "caron.js",
