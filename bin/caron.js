@@ -50,6 +50,11 @@ const program = require('yargs')
     default: 100,
     type: 'number'
   })
+  .option('debug', {
+    describe: 'enable debug logging',
+    default: false,
+    type: 'boolean'
+  })
   .option('q_prefix', {
     describe: 'redis queue prefix (e.g: "production:")',
     default: '',

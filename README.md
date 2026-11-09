@@ -37,6 +37,7 @@ $ caron --help
     --def_worker <val>    default Job Queue worker - default: BaseJob
     --def_attempts <val>  default Bull Job attempts - default: 1
     --q_lifo              Bull LIFO mode
+    --debug               enable debug logging
 
 ```
 
@@ -44,10 +45,10 @@ $ caron --help
 caron --type sidekiq --list sidekiq_jobs --redis "redis://127.0.0.1:6379" --freq 25
 ```
 
-Debug mode:
+Enable Caron debug logging:
 
 ```
-DEBUG=caron:* caron -t bull -l bull_test
+caron -t bull -l bull_test --debug
 ```
 
 ### Examples
@@ -89,3 +90,10 @@ rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'priority', '$at
 rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 rcli.lpush('bull_test', JSON.dump({ 'foo' => 'bar', '$queue' => 'lazy', '$attempts' => 1, '$delay' => 5000, other => { 'a' => 1, 'b' => 2 } }))
 ```
+
+## Node and package manager
+
+Use Node 22 and npm 12.2.1. Install with `npm ci` and run `npm test`. Set `TEST_REDIS_URL` to use a dedicated test Redis instance.
+
+Tests use Brittle on Node.js and require Redis. Run the suite with `npm test`
+(lint and tests), or run one file with `npx brittle-node test/q-lifo.js`.
